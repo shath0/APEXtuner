@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>APEX — Forza Motorsport 2023 Tune Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0E1014; --panel:#171A21; --panel-2:#1E222B; --line:#2A2F3A;
+  --ink:#EDEFF3; --ink-dim:#98A0AE;
+  --amber:#FFB020; --amber-hot:#FF7A18; --green:#35D07F; --red:#FF4D4D;
+  --display:"Barlow Condensed","Oswald",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{padding:0 0 80px}
+a{color:var(--amber)}
+.wrap{max-width:1160px;margin:0 auto;padding:0 20px}
+
+/* header */
+header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#12151C,#0E1014);position:sticky;top:0;z-index:5}
+.head-in{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:18px 0 14px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:14px}
+.logo{font-family:var(--display);font-weight:700;font-size:38px;letter-spacing:.14em;line-height:.9;text-transform:uppercase}
+.logo b{color:var(--amber)}
+.tag{font-family:var(--mono);font-size:11px;color:var(--ink-dim);letter-spacing:.18em;text-transform:uppercase}
+.sub{font-family:var(--display);font-size:15px;letter-spacing:.06em;color:var(--ink-dim);text-transform:uppercase}
+
+/* rev-light PI bar — the signature */
+.revwrap{padding:6px 0 16px}
+.revrow{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.revbar{display:flex;gap:3px;flex:1;min-width:260px;height:26px;padding:4px;background:#0A0C10;border:1px solid var(--line);border-radius:4px}
+.seg{flex:1;border-radius:2px;background:#20242E;transition:background .12s ease,box-shadow .12s ease}
+.seg.on-g{background:var(--green);box-shadow:0 0 8px rgba(53,208,127,.5)}
+.seg.on-a{background:var(--amber);box-shadow:0 0 8px rgba(255,176,32,.55)}
+.seg.on-r{background:var(--red);box-shadow:0 0 9px rgba(255,77,77,.6)}
+.pi-read{font-family:var(--mono);font-weight:700;font-size:15px;white-space:nowrap}
+.pi-read .cls{color:var(--amber);font-family:var(--display);font-size:22px;letter-spacing:.06em;margin-right:8px}
+.pi-read small{color:var(--ink-dim);font-weight:400}
+
+/* layout */
+.grid{display:grid;grid-template-columns:340px 1fr;gap:22px;margin-top:22px}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+
+/* controls */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.controls{padding:18px}
+.controls h2{font-family:var(--display);font-size:15px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);margin:0 0 14px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.field{margin-bottom:14px}
+.field label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:6px}
+select,input[type=text]{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+  font-family:var(--mono);font-size:13px;padding:9px 10px;border-radius:5px;appearance:none}
+select:focus,input:focus{outline:2px solid var(--amber);outline-offset:1px;border-color:var(--amber)}
+input[type=range]{width:100%;accent-color:var(--amber)}
+.range-val{font-family:var(--mono);font-size:12px;color:var(--amber);float:right}
+
+/* segmented toggles */
+.seg-toggle{display:flex;gap:4px;flex-wrap:wrap}
+.seg-toggle button{flex:1;min-width:52px;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-dim);
+  font-family:var(--display);font-size:14px;letter-spacing:.04em;text-transform:uppercase;padding:8px 6px;border-radius:5px;cursor:pointer;transition:.12s}
+.seg-toggle button:hover{color:var(--ink);border-color:#3a4150}
+.seg-toggle button[aria-pressed=true]{background:var(--amber);color:#1a1204;border-color:var(--amber);font-weight:600}
+.seg-toggle button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+.cta{width:100%;margin-top:6px;background:var(--amber);color:#1a1204;border:none;font-family:var(--display);
+  font-weight:700;font-size:19px;letter-spacing:.1em;text-transform:uppercase;padding:13px;border-radius:6px;cursor:pointer;transition:.12s}
+.cta:hover{background:var(--amber-hot)}
+.cta:focus-visible{outline:3px solid #fff;outline-offset:2px}
+
+.remote{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.remote .row{display:flex;gap:6px}
+.remote button{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);font-family:var(--display);
+  text-transform:uppercase;letter-spacing:.05em;font-size:14px;padding:0 12px;border-radius:5px;cursor:pointer;white-space:nowrap}
+.remote button:hover{border-color:var(--amber);color:var(--amber)}
+.hint{font-family:var(--sans);font-size:11px;color:var(--ink-dim);margin-top:8px;line-height:1.5}
+
+/* output */
+.out-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.out-head h2{font-family:var(--display);font-size:24px;letter-spacing:.05em;text-transform:uppercase;margin:0}
+.out-actions{display:flex;gap:8px}
+.out-actions button{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);font-family:var(--mono);
+  font-size:12px;padding:7px 12px;border-radius:5px;cursor:pointer}
+.out-actions button:hover{border-color:var(--amber);color:var(--amber)}
+
+.summary{padding:14px 16px;margin-bottom:16px}
+.summary .car{font-family:var(--display);font-size:22px;letter-spacing:.03em;text-transform:uppercase;color:var(--amber)}
+.summary ul{margin:8px 0 0;padding:0;list-style:none}
+.summary li{font-family:var(--mono);font-size:12px;color:var(--ink-dim);padding:2px 0}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.card{padding:0;overflow:hidden}
+.card h3{font-family:var(--display);font-size:16px;letter-spacing:.1em;text-transform:uppercase;margin:0;
+  padding:11px 15px;background:var(--panel-2);border-bottom:1px solid var(--line);color:var(--ink)}
+.card h3 .dot{display:inline-block;width:7px;height:7px;background:var(--amber);border-radius:50%;margin-right:9px;vertical-align:middle}
+.rows{padding:6px 15px 12px}
+.trow{padding:9px 0;border-bottom:1px dashed var(--line)}
+.trow:last-child{border-bottom:none}
+.trow .kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.trow .k{font-family:var(--sans);font-size:13px;color:var(--ink)}
+.trow .v{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--amber);text-align:right;white-space:nowrap}
+.trow .r{font-family:var(--sans);font-size:11.5px;color:var(--ink-dim);margin-top:3px;line-height:1.45}
+.card .foot{padding:9px 15px;background:#12151C;border-top:1px solid var(--line);font-family:var(--sans);
+  font-size:11.5px;color:var(--ink-dim);line-height:1.45}
+
+/* upgrade card spans full width */
+.upgrade{grid-column:1/-1;padding:0}
+.upgrade h3{background:linear-gradient(90deg,#241a06,var(--panel-2))}
+.uplist{padding:8px 15px 14px;counter-reset:up}
+.upitem{display:flex;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.upitem:last-child{border-bottom:none}
+.upitem::before{counter-increment:up;content:counter(up);font-family:var(--mono);font-weight:700;color:#1a1204;
+  background:var(--amber);width:22px;height:22px;flex:0 0 22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px}
+.upitem .p{font-family:var(--display);font-size:15px;letter-spacing:.03em;text-transform:uppercase;color:var(--ink)}
+.upitem .w{font-family:var(--sans);font-size:11.5px;color:var(--ink-dim);margin-top:2px;line-height:1.45}
+
+.empty{padding:60px 20px;text-align:center;color:var(--ink-dim);font-family:var(--display);
+  font-size:20px;letter-spacing:.1em;text-transform:uppercase}
+.empty span{display:block;font-family:var(--sans);font-size:13px;text-transform:none;letter-spacing:0;margin-top:8px}
+
+footer{margin-top:40px;border-top:1px solid var(--line);padding-top:16px}
+footer p{font-family:var(--sans);font-size:11.5px;color:var(--ink-dim);line-height:1.6}
+
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media print{header,.controls,.out-actions,.revwrap{display:none}.grid{display:block}.cards{gap:8px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="head-in">
+      <div class="brand">
+        <div class="logo">A<b>P</b>EX</div>
+        <div>
+          <div class="sub">Tune Generator</div>
+          <div class="tag">Forza Motorsport · 2023</div>
+        </div>
+      </div>
+      <div class="tag" id="rosterState">roster: 681 cars</div>
+    </div>
+    <div class="revwrap">
+      <div class="revrow">
+        <div class="revbar" id="revbar" aria-hidden="true"></div>
+        <div class="pi-read"><span class="cls" id="revClass">B</span><span id="revPI">650</span> <small>/ cap <span id="revCap">700</span></small></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+    <!-- CONTROLS -->
+    <aside class="panel controls" aria-label="Tune inputs">
+      <h2>Build Inputs</h2>
+
+      <div class="field">
+        <label for="car">Car</label>
+        <input list="carlist" id="car" placeholder="Type to search…" autocomplete="off" />
+        <datalist id="carlist"></datalist>
+      </div>
+
+      <div class="field">
+        <label for="piClass">PI class</label>
+        <select id="piClass">
+          <option>D</option><option>C</option><option selected>B</option>
+          <option>A</option><option>S1</option><option>S2</option><option>X</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="piTarget">PI target <span class="range-val" id="piTargetVal">650</span></label>
+        <input type="range" id="piTarget" min="600" max="700" value="650" step="1" />
+      </div>
+
+      <div class="field">
+        <label for="tire">Tyre compound</label>
+        <select id="tire">
+          <option>Stock</option><option>Street</option><option selected>Sport</option>
+          <option>Race</option><option>Drag</option><option>Rally</option><option>Off-Road</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Engine layout</label>
+        <div class="seg-toggle" id="layout" data-key="layout">
+          <button data-val="front" aria-pressed="true">Front</button>
+          <button data-val="mid" aria-pressed="false">Mid</button>
+          <button data-val="rear" aria-pressed="false">Rear</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Drivetrain</label>
+        <div class="seg-toggle" id="drivetrain" data-key="drivetrain">
+          <button data-val="RWD" aria-pressed="true">RWD</button>
+          <button data-val="AWD" aria-pressed="false">AWD</button>
+          <button data-val="FWD" aria-pressed="false">FWD</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Surface condition</label>
+        <div class="seg-toggle" id="surface" data-key="surface">
+          <button data-val="dry" aria-pressed="true">Dry</button>
+          <button data-val="damp" aria-pressed="false">Damp</button>
+          <button data-val="wet" aria-pressed="false">Wet</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="track">Track (optional)</label>
+        <select id="track"><option value="">— none · use character toggle —</option></select>
+      </div>
+
+      <div class="field">
+        <label>Track character</label>
+        <div class="seg-toggle" id="tech" data-key="tech">
+          <button data-val="technical" aria-pressed="false">Technical</button>
+          <button data-val="mixed" aria-pressed="true">Mixed</button>
+          <button data-val="high-speed" aria-pressed="false">Fast</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="goal">Build goal</label>
+        <select id="goal">
+          <option value="grip" selected>Grip / track</option>
+          <option value="time-attack">Time attack / rivals</option>
+          <option value="drag">Drag</option>
+          <option value="drift">Drift</option>
+          <option value="oval">Oval / high-speed</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Assists</label>
+        <div class="seg-toggle" id="assists">
+          <button data-flag="abs" aria-pressed="true">ABS</button>
+          <button data-flag="tc" aria-pressed="true">TC</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="issue">Fix a handling issue (optional)</label>
+        <select id="issue">
+          <option value="none" selected>None — baseline tune</option>
+          <option value="understeer">Understeer on entry</option>
+          <option value="oversteer-exit">Power oversteer on exit</option>
+          <option value="oversteer-entry">Oversteer on entry</option>
+          <option value="snap-oversteer">Snap / lift-off oversteer</option>
+          <option value="braking-instability">Unstable under braking</option>
+          <option value="wheelspin">Wheelspin out of corners</option>
+          <option value="wont-rotate">Won't rotate at apex</option>
+        </select>
+      </div>
+
+      <button class="cta" id="generate">Generate Tune</button>
+
+      <div class="remote">
+        <label style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim);display:block;margin-bottom:6px">Replace roster (cars.json URL)</label>
+        <div class="row">
+          <input type="text" id="rosterUrl" placeholder="https://raw.githubusercontent.com/…/cars.json" />
+          <button id="loadRoster">Load</button>
+        </div>
+        <p class="hint">All 681 cars are already bundled. Drivetrain and engine layout are auto-inferred defaults — the toggles above override them per build. Paste a raw JSON array of <code>{name,dt,layout,weight,fdist,cls,pi}</code> to replace the roster with your own (e.g. one enriched with weights). See the README.</p>
+      </div>
+    </aside>
+
+    <!-- OUTPUT -->
+    <main>
+      <div class="out-head">
+        <h2>Setup Sheet</h2>
+        <div class="out-actions" id="outActions" hidden>
+          <button id="copyBtn">Copy sheet</button>
+          <button id="jsonBtn">Export JSON</button>
+          <button id="printBtn">Print</button>
+        </div>
+      </div>
+      <div id="output">
+        <div class="panel empty">Pick a car and hit Generate
+          <span>Values are FM2023 starting points — test on track and trim from there.</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer>
+    <p><strong>APEX</strong> generates baseline tunes from the FM2023 physics model. Springs, ride height and dampers are given as a percentage of each car's slider range (they're car-specific); ARB (1–65), dampers (1–20), diff and brakes are absolute. In-game behaviour is always ground truth — treat this as a starting point and iterate. Not affiliated with Turn 10 or Microsoft.</p>
+  </footer>
+</div>
+
+<script src="data/cars.js"></script>
+<script src="data/tracks.js"></script>
+<script src="js/engine.js"></script>
+<script>
+(function(){
+  "use strict";
+  var $ = function(s){return document.querySelector(s);};
+  var cars = window.FORZA_CARS || [];
+  var tracks = window.FORZA_TRACKS || [];
+  var FLOOR = window.ForzaTune.CLASS_FLOOR, CAP = window.ForzaTune.CLASS_CAP;
+  var lastTune = null;
+  var selectedTrack = null;
+
+  // ---- populate track list (grouped by venue) ----
+  function fillTracks(){
+    var sel = $("#track");
+    var groups = {};
+    tracks.forEach(function(t, i){
+      (groups[t.venue] = groups[t.venue] || []).push(i);
+    });
+    Object.keys(groups).forEach(function(venue){
+      var og = document.createElement("optgroup"); og.label = venue;
+      groups[venue].forEach(function(i){
+        var o = document.createElement("option");
+        o.value = String(i); o.textContent = tracks[i].layout;
+        og.appendChild(o);
+      });
+      sel.appendChild(og);
+    });
+  }
+
+  // ---- populate car list ----
+  function fillCars(){
+    var dl = $("#carlist"); dl.innerHTML = "";
+    cars.forEach(function(c){
+      var o = document.createElement("option");
+      o.value = c.name;
+      if(c.division) o.label = c.division;
+      dl.appendChild(o);
+    });
+    updateRosterState();
+  }
+  function updateRosterState(){
+    $("#rosterState").textContent = "roster: " + cars.length + " cars";
+  }
+  function findCar(name){
+    return cars.find(function(c){return c.name.toLowerCase() === (name||"").toLowerCase();});
+  }
+
+  // ---- segmented toggles ----
+  function wireToggle(id){
+    var g = document.getElementById(id);
+    g.addEventListener("click", function(e){
+      var b = e.target.closest("button"); if(!b) return;
+      Array.prototype.forEach.call(g.querySelectorAll("button"), function(x){x.setAttribute("aria-pressed","false");});
+      b.setAttribute("aria-pressed","true");
+    });
+  }
+  ["layout","drivetrain","surface","tech"].forEach(wireToggle);
+  // assists = independent flags
+  $("#assists").addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    b.setAttribute("aria-pressed", b.getAttribute("aria-pressed")==="true" ? "false":"true");
+  });
+  function toggleVal(id){ return document.querySelector("#"+id+" button[aria-pressed=true]").dataset.val; }
+  function flag(name){ return $("#assists button[data-flag="+name+"]").getAttribute("aria-pressed")==="true"; }
+  function setToggle(id,val){
+    Array.prototype.forEach.call(document.querySelectorAll("#"+id+" button"), function(b){
+      b.setAttribute("aria-pressed", b.dataset.val===val ? "true":"false");
+    });
+  }
+
+  // ---- track selection drives the character toggle ----
+  $("#track").addEventListener("change", function(){
+    var v = this.value;
+    if(v === ""){ selectedTrack = null; return; }
+    selectedTrack = tracks[+v] || null;
+    if(selectedTrack) setToggle("tech", selectedTrack.character);
+  });
+
+  // ---- PI slider + rev bar ----
+  var SEGS = 22;
+  (function buildBar(){
+    var bar = $("#revbar");
+    for(var i=0;i<SEGS;i++){ var s=document.createElement("div"); s.className="seg"; bar.appendChild(s); }
+  })();
+  function syncClassRange(){
+    var cls = $("#piClass").value;
+    var lo = FLOOR[cls], hi = CAP[cls];
+    var slider = $("#piTarget");
+    slider.min = lo; slider.max = hi;
+    if(+slider.value < lo || +slider.value > hi) slider.value = Math.round(lo + (hi-lo)*0.75);
+    $("#revClass").textContent = cls;
+    $("#revCap").textContent = hi;
+    drawBar();
+  }
+  function drawBar(){
+    var cls = $("#piClass").value, lo = FLOOR[cls], hi = CAP[cls];
+    var t = +$("#piTarget").value;
+    $("#piTargetVal").textContent = t; $("#revPI").textContent = t;
+    var frac = (t - lo)/(hi - lo);
+    var lit = Math.round(frac * SEGS);
+    var segs = $("#revbar").children;
+    for(var i=0;i<SEGS;i++){
+      var s = segs[i]; s.className = "seg";
+      if(i < lit){
+        var p = i/SEGS;
+        s.classList.add(p < 0.6 ? "on-g" : p < 0.82 ? "on-a" : "on-r");
+      }
+    }
+  }
+  $("#piClass").addEventListener("change", syncClassRange);
+  $("#piTarget").addEventListener("input", drawBar);
+
+  // ---- when a known car is picked, auto-set layout/drivetrain/class ----
+  $("#car").addEventListener("change", function(){
+    var c = findCar(this.value); if(!c) return;
+    setToggle("layout", c.layout);
+    setToggle("drivetrain", c.dt);
+    if(CAP[c.cls]){ $("#piClass").value = c.cls; syncClassRange(); }
+  });
+
+  // ---- gather + generate ----
+  function gather(){
+    return {
+      piClass: $("#piClass").value,
+      piTarget: +$("#piTarget").value,
+      tire: $("#tire").value,
+      layout: toggleVal("layout"),
+      drivetrain: toggleVal("drivetrain"),
+      surface: toggleVal("surface"),
+      tech: toggleVal("tech"),
+      goal: $("#goal").value,
+      abs: flag("abs"),
+      tc: flag("tc"),
+      issue: $("#issue").value,
+      track: selectedTrack
+    };
+  }
+  function generate(){
+    var name = $("#car").value.trim();
+    var c = findCar(name);
+    if(!c){
+      // allow generating from toggles alone with a generic chassis
+      c = { name: name || "Custom chassis", dt: toggleVal("drivetrain"), layout: toggleVal("layout"),
+            weight: 3200, fdist: 52, cls: $("#piClass").value, pi: $("#piTarget").value };
+    }
+    var opts = gather();
+    lastTune = window.ForzaTune.generateTune(c, opts);
+    render(lastTune);
+    $("#outActions").hidden = false;
+  }
+  $("#generate").addEventListener("click", generate);
+
+  // ---- render ----
+  function esc(s){ return String(s).replace(/[&<>]/g, function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[m];}); }
+  function render(t){
+    var html = "";
+    // summary
+    html += '<div class="panel summary"><div class="car">'+esc(t.summary.car)+'</div><ul>';
+    t.summary.notes.forEach(function(n){ html += '<li>'+esc(n)+'</li>'; });
+    html += '</ul></div>';
+    html += '<div class="cards">';
+    // upgrade card
+    html += '<div class="panel card upgrade"><h3><span class="dot"></span>Upgrade priority</h3><div class="uplist">';
+    t.upgrades.forEach(function(u){
+      html += '<div class="upitem"><div><div class="p">'+esc(u.part)+'</div><div class="w">'+esc(u.why)+'</div></div></div>';
+    });
+    html += '</div></div>';
+    // setting cards
+    t.sections.forEach(function(sec){
+      html += '<div class="panel card"><h3><span class="dot"></span>'+esc(sec.title)+'</h3><div class="rows">';
+      sec.items.forEach(function(it){
+        html += '<div class="trow"><div class="kv"><span class="k">'+esc(it.k)+'</span><span class="v">'+esc(it.v)+'</span></div>';
+        if(it.r) html += '<div class="r">'+esc(it.r)+'</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+      if(sec.note) html += '<div class="foot">'+esc(sec.note)+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    $("#output").innerHTML = html;
+  }
+
+  // ---- export helpers ----
+  function toText(t){
+    var L = [];
+    L.push("APEX TUNE SHEET — "+t.summary.car);
+    t.summary.notes.forEach(function(n){L.push("  "+n);});
+    L.push("");
+    L.push("UPGRADE PRIORITY:");
+    t.upgrades.forEach(function(u,i){L.push("  "+(i+1)+". "+u.part);});
+    L.push("");
+    t.sections.forEach(function(s){
+      L.push(s.title.toUpperCase());
+      s.items.forEach(function(it){L.push("  "+it.k+": "+it.v);});
+      L.push("");
+    });
+    L.push("Baseline from FM2023 model — test and trim on track.");
+    return L.join("\n");
+  }
+  $("#copyBtn") && $("#copyBtn");
+  document.addEventListener("click", function(e){
+    if(e.target.id==="copyBtn" && lastTune){
+      navigator.clipboard.writeText(toText(lastTune)).then(function(){
+        e.target.textContent="Copied!"; setTimeout(function(){e.target.textContent="Copy sheet";},1400);
+      });
+    }
+    if(e.target.id==="jsonBtn" && lastTune){
+      var blob = new Blob([JSON.stringify(lastTune,null,2)],{type:"application/json"});
+      var a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+      a.download = "apex-tune.json"; a.click(); URL.revokeObjectURL(a.href);
+    }
+    if(e.target.id==="printBtn"){ window.print(); }
+  });
+
+  // ---- remote roster loader ----
+  $("#loadRoster").addEventListener("click", function(){
+    var url = $("#rosterUrl").value.trim(); if(!url) return;
+    var btn = this; btn.textContent = "…";
+    fetch(url).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function(data){
+        if(!Array.isArray(data) || !data.length) throw new Error("empty");
+        cars = data; fillCars();
+        btn.textContent = "Load";
+      })
+      .catch(function(err){
+        btn.textContent = "Load";
+        alert("Couldn't load roster: "+err.message+"\nCheck the URL is a raw JSON array and allows cross-origin requests.");
+      });
+  });
+
+  // ---- init ----
+  fillCars(); fillTracks(); syncClassRange();
+})();
+</script>
+</body>
+</html>
