@@ -1,0 +1,5125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>APEX — Forza Motorsport 2023 Tune Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0E1014; --panel:#171A21; --panel-2:#1E222B; --line:#2A2F3A;
+  --ink:#EDEFF3; --ink-dim:#98A0AE;
+  --amber:#FFB020; --amber-hot:#FF7A18; --green:#35D07F; --red:#FF4D4D;
+  --display:"Barlow Condensed","Oswald",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{padding:0 0 80px}
+a{color:var(--amber)}
+.wrap{max-width:1160px;margin:0 auto;padding:0 20px}
+
+/* header */
+header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#12151C,#0E1014);position:sticky;top:0;z-index:5}
+.head-in{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:18px 0 14px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:14px}
+.logo{font-family:var(--display);font-weight:700;font-size:38px;letter-spacing:.14em;line-height:.9;text-transform:uppercase}
+.logo b{color:var(--amber)}
+.tag{font-family:var(--mono);font-size:11px;color:var(--ink-dim);letter-spacing:.18em;text-transform:uppercase}
+.sub{font-family:var(--display);font-size:15px;letter-spacing:.06em;color:var(--ink-dim);text-transform:uppercase}
+
+/* rev-light PI bar — the signature */
+.revwrap{padding:6px 0 16px}
+.revrow{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.revbar{display:flex;gap:3px;flex:1;min-width:260px;height:26px;padding:4px;background:#0A0C10;border:1px solid var(--line);border-radius:4px}
+.seg{flex:1;border-radius:2px;background:#20242E;transition:background .12s ease,box-shadow .12s ease}
+.seg.on-g{background:var(--green);box-shadow:0 0 8px rgba(53,208,127,.5)}
+.seg.on-a{background:var(--amber);box-shadow:0 0 8px rgba(255,176,32,.55)}
+.seg.on-r{background:var(--red);box-shadow:0 0 9px rgba(255,77,77,.6)}
+.pi-read{font-family:var(--mono);font-weight:700;font-size:15px;white-space:nowrap}
+.pi-read .cls{color:var(--amber);font-family:var(--display);font-size:22px;letter-spacing:.06em;margin-right:8px}
+.pi-read small{color:var(--ink-dim);font-weight:400}
+
+/* layout */
+.grid{display:grid;grid-template-columns:340px 1fr;gap:22px;margin-top:22px}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+
+/* controls */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.controls{padding:18px}
+.controls h2{font-family:var(--display);font-size:15px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim);margin:0 0 14px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.field{margin-bottom:14px}
+.field label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:6px}
+select,input[type=text]{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+  font-family:var(--mono);font-size:13px;padding:9px 10px;border-radius:5px;appearance:none}
+select:focus,input:focus{outline:2px solid var(--amber);outline-offset:1px;border-color:var(--amber)}
+input[type=range]{width:100%;accent-color:var(--amber)}
+.range-val{font-family:var(--mono);font-size:12px;color:var(--amber);float:right}
+
+/* segmented toggles */
+.seg-toggle{display:flex;gap:4px;flex-wrap:wrap}
+.seg-toggle button{flex:1;min-width:52px;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-dim);
+  font-family:var(--display);font-size:14px;letter-spacing:.04em;text-transform:uppercase;padding:8px 6px;border-radius:5px;cursor:pointer;transition:.12s}
+.seg-toggle button:hover{color:var(--ink);border-color:#3a4150}
+.seg-toggle button[aria-pressed=true]{background:var(--amber);color:#1a1204;border-color:var(--amber);font-weight:600}
+.seg-toggle button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+.cta{width:100%;margin-top:6px;background:var(--amber);color:#1a1204;border:none;font-family:var(--display);
+  font-weight:700;font-size:19px;letter-spacing:.1em;text-transform:uppercase;padding:13px;border-radius:6px;cursor:pointer;transition:.12s}
+.cta:hover{background:var(--amber-hot)}
+.cta:focus-visible{outline:3px solid #fff;outline-offset:2px}
+
+.remote{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.remote .row{display:flex;gap:6px}
+.remote button{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);font-family:var(--display);
+  text-transform:uppercase;letter-spacing:.05em;font-size:14px;padding:0 12px;border-radius:5px;cursor:pointer;white-space:nowrap}
+.remote button:hover{border-color:var(--amber);color:var(--amber)}
+.hint{font-family:var(--sans);font-size:11px;color:var(--ink-dim);margin-top:8px;line-height:1.5}
+
+/* output */
+.out-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.out-head h2{font-family:var(--display);font-size:24px;letter-spacing:.05em;text-transform:uppercase;margin:0}
+.out-actions{display:flex;gap:8px}
+.out-actions button{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);font-family:var(--mono);
+  font-size:12px;padding:7px 12px;border-radius:5px;cursor:pointer}
+.out-actions button:hover{border-color:var(--amber);color:var(--amber)}
+
+.summary{padding:14px 16px;margin-bottom:16px}
+.summary .car{font-family:var(--display);font-size:22px;letter-spacing:.03em;text-transform:uppercase;color:var(--amber)}
+.summary ul{margin:8px 0 0;padding:0;list-style:none}
+.summary li{font-family:var(--mono);font-size:12px;color:var(--ink-dim);padding:2px 0}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.card{padding:0;overflow:hidden}
+.card h3{font-family:var(--display);font-size:16px;letter-spacing:.1em;text-transform:uppercase;margin:0;
+  padding:11px 15px;background:var(--panel-2);border-bottom:1px solid var(--line);color:var(--ink)}
+.card h3 .dot{display:inline-block;width:7px;height:7px;background:var(--amber);border-radius:50%;margin-right:9px;vertical-align:middle}
+.rows{padding:6px 15px 12px}
+.trow{padding:9px 0;border-bottom:1px dashed var(--line)}
+.trow:last-child{border-bottom:none}
+.trow .kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.trow .k{font-family:var(--sans);font-size:13px;color:var(--ink)}
+.trow .v{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--amber);text-align:right;white-space:nowrap}
+.trow .r{font-family:var(--sans);font-size:11.5px;color:var(--ink-dim);margin-top:3px;line-height:1.45}
+.card .foot{padding:9px 15px;background:#12151C;border-top:1px solid var(--line);font-family:var(--sans);
+  font-size:11.5px;color:var(--ink-dim);line-height:1.45}
+
+/* upgrade card spans full width */
+.upgrade{grid-column:1/-1;padding:0}
+.upgrade h3{background:linear-gradient(90deg,#241a06,var(--panel-2))}
+.uplist{padding:8px 15px 14px;counter-reset:up}
+.upitem{display:flex;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.upitem:last-child{border-bottom:none}
+.upitem::before{counter-increment:up;content:counter(up);font-family:var(--mono);font-weight:700;color:#1a1204;
+  background:var(--amber);width:22px;height:22px;flex:0 0 22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px}
+.upitem .p{font-family:var(--display);font-size:15px;letter-spacing:.03em;text-transform:uppercase;color:var(--ink)}
+.upitem .w{font-family:var(--sans);font-size:11.5px;color:var(--ink-dim);margin-top:2px;line-height:1.45}
+
+.empty{padding:60px 20px;text-align:center;color:var(--ink-dim);font-family:var(--display);
+  font-size:20px;letter-spacing:.1em;text-transform:uppercase}
+.empty span{display:block;font-family:var(--sans);font-size:13px;text-transform:none;letter-spacing:0;margin-top:8px}
+
+footer{margin-top:40px;border-top:1px solid var(--line);padding-top:16px}
+footer p{font-family:var(--sans);font-size:11.5px;color:var(--ink-dim);line-height:1.6}
+
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media print{header,.controls,.out-actions,.revwrap{display:none}.grid{display:block}.cards{gap:8px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="head-in">
+      <div class="brand">
+        <div class="logo">A<b>P</b>EX</div>
+        <div>
+          <div class="sub">Tune Generator</div>
+          <div class="tag">Forza Motorsport · 2023</div>
+        </div>
+      </div>
+      <div class="tag" id="rosterState">roster: 681 cars</div>
+    </div>
+    <div class="revwrap">
+      <div class="revrow">
+        <div class="revbar" id="revbar" aria-hidden="true"></div>
+        <div class="pi-read"><span class="cls" id="revClass">B</span><span id="revPI">650</span> <small>/ cap <span id="revCap">700</span></small></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+    <!-- CONTROLS -->
+    <aside class="panel controls" aria-label="Tune inputs">
+      <h2>Build Inputs</h2>
+
+      <div class="field">
+        <label for="car">Car</label>
+        <input list="carlist" id="car" placeholder="Type to search…" autocomplete="off" />
+        <datalist id="carlist"></datalist>
+      </div>
+
+      <div class="field">
+        <label for="piClass">PI class</label>
+        <select id="piClass">
+          <option>D</option><option>C</option><option selected>B</option>
+          <option>A</option><option>S1</option><option>S2</option><option>X</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="piTarget">PI target <span class="range-val" id="piTargetVal">650</span></label>
+        <input type="range" id="piTarget" min="600" max="700" value="650" step="1" />
+      </div>
+
+      <div class="field">
+        <label for="tire">Tyre compound</label>
+        <select id="tire">
+          <option>Stock</option><option>Street</option><option selected>Sport</option>
+          <option>Race</option><option>Drag</option><option>Rally</option><option>Off-Road</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Engine layout</label>
+        <div class="seg-toggle" id="layout" data-key="layout">
+          <button data-val="front" aria-pressed="true">Front</button>
+          <button data-val="mid" aria-pressed="false">Mid</button>
+          <button data-val="rear" aria-pressed="false">Rear</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Drivetrain</label>
+        <div class="seg-toggle" id="drivetrain" data-key="drivetrain">
+          <button data-val="RWD" aria-pressed="true">RWD</button>
+          <button data-val="AWD" aria-pressed="false">AWD</button>
+          <button data-val="FWD" aria-pressed="false">FWD</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Surface condition</label>
+        <div class="seg-toggle" id="surface" data-key="surface">
+          <button data-val="dry" aria-pressed="true">Dry</button>
+          <button data-val="damp" aria-pressed="false">Damp</button>
+          <button data-val="wet" aria-pressed="false">Wet</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="track">Track (optional)</label>
+        <select id="track"><option value="">— none · use character toggle —</option></select>
+      </div>
+
+      <div class="field">
+        <label>Track character</label>
+        <div class="seg-toggle" id="tech" data-key="tech">
+          <button data-val="technical" aria-pressed="false">Technical</button>
+          <button data-val="mixed" aria-pressed="true">Mixed</button>
+          <button data-val="high-speed" aria-pressed="false">Fast</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="goal">Build goal</label>
+        <select id="goal">
+          <option value="grip" selected>Grip / track</option>
+          <option value="time-attack">Time attack / rivals</option>
+          <option value="drag">Drag</option>
+          <option value="drift">Drift</option>
+          <option value="oval">Oval / high-speed</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Assists</label>
+        <div class="seg-toggle" id="assists">
+          <button data-flag="abs" aria-pressed="true">ABS</button>
+          <button data-flag="tc" aria-pressed="true">TC</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="issue">Fix a handling issue (optional)</label>
+        <select id="issue">
+          <option value="none" selected>None — baseline tune</option>
+          <option value="understeer">Understeer on entry</option>
+          <option value="oversteer-exit">Power oversteer on exit</option>
+          <option value="oversteer-entry">Oversteer on entry</option>
+          <option value="snap-oversteer">Snap / lift-off oversteer</option>
+          <option value="braking-instability">Unstable under braking</option>
+          <option value="wheelspin">Wheelspin out of corners</option>
+          <option value="wont-rotate">Won't rotate at apex</option>
+        </select>
+      </div>
+
+      <button class="cta" id="generate">Generate Tune</button>
+
+      <div class="remote">
+        <label style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim);display:block;margin-bottom:6px">Replace roster (cars.json URL)</label>
+        <div class="row">
+          <input type="text" id="rosterUrl" placeholder="https://raw.githubusercontent.com/…/cars.json" />
+          <button id="loadRoster">Load</button>
+        </div>
+        <p class="hint">All 681 cars are already bundled. Drivetrain and engine layout are auto-inferred defaults — the toggles above override them per build. Paste a raw JSON array of <code>{name,dt,layout,weight,fdist,cls,pi}</code> to replace the roster with your own (e.g. one enriched with weights). See the README.</p>
+      </div>
+    </aside>
+
+    <!-- OUTPUT -->
+    <main>
+      <div class="out-head">
+        <h2>Setup Sheet</h2>
+        <div class="out-actions" id="outActions" hidden>
+          <button id="copyBtn">Copy sheet</button>
+          <button id="jsonBtn">Export JSON</button>
+          <button id="printBtn">Print</button>
+        </div>
+      </div>
+      <div id="output">
+        <div class="panel empty">Pick a car and hit Generate
+          <span>Values are FM2023 starting points — test on track and trim from there.</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer>
+    <p><strong>APEX</strong> generates baseline tunes from the FM2023 physics model. Springs, ride height and dampers are given as a percentage of each car's slider range (they're car-specific); ARB (1–65), dampers (1–20), diff and brakes are absolute. In-game behaviour is always ground truth — treat this as a starting point and iterate. Not affiliated with Turn 10 or Microsoft.</p>
+  </footer>
+</div>
+
+<script>
+/*
+ * Forza Motorsport (2023) — FULL ROSTER (681 cars)
+ * Source: official list at https://forza.net/fmcars (name + division are authoritative).
+ * dt (drivetrain) and layout (engine position) are AUTO-INFERRED heuristics —
+ * treat them as editable defaults. The app's drivetrain/layout toggles override
+ * them per build. Weight / weight-distribution / PI are not in the source and are
+ * omitted; the tune engine falls back to generic values when they're absent.
+ */
+window.FORZA_CARS = [
+{
+"name": "2017 Abarth 124 Spider",
+"division": "Modern Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2022 Acura NSX Type S",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2020 Acura #6 ARX-05 DPi",
+"division": "Forza Proto-H",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2018 Acura #36 NSX GT3",
+"division": "Forza GT3",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2017 Acura NSX",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2001 Acura Integra Type R",
+"division": "Early Sport Compact",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2017 Alfa Romeo Giulia Quadrifoglio",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2014 Alfa Romeo 4C",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2011 Alfa Romeo Giulietta Quadrifoglio Verde",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1965 Alfa Romeo Giulia Sprint GTA Stradale",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Alpine A110",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1990 Alpine GTA Le Mans",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1971 AMC Javelin AMX",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1970 AMC Rebel The Machine",
+"division": "Street Drag Racers",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Apollo Intensa Emozione",
+"division": "Modern Hypercars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2013 Ariel Atom 500 V8",
+"division": "Track Toys",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2023 Aston Martin Valkyrie",
+"division": "Modern Hypercars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2022 Aston Martin Valkyrie AMR Pro",
+"division": "Modern Factory Racecars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2019 Aston Martin Valhalla Concept Car",
+"division": "Modern Hypercars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2019 Aston Martin DBS Superleggera",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2019 Aston Martin Vantage",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Aston Martin #97 AMR Vantage GTE",
+"division": "Forza GT2",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Aston Martin Vulcan AMR Pro",
+"division": "Modern Factory Racecars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Aston Martin #7 Aston Martin Racing V12 Vantage GT3",
+"division": "Forza GT3",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Aston Martin Vanquish Zagato Coupe",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2016 Aston Martin Vulcan",
+"division": "Modern Factory Racecars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Aston Martin Vantage GT12",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2013 Aston Martin V12 Vantage S",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2008 Aston Martin DBS",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2001 Aston Martin V12 Vanquish",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1998 Aston Martin V8 Vantage V600",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1989 Aston Martin #18 Aston Martin AMR1",
+"division": "GTP/C",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1967 Aston Martin DBS",
+"division": "Vintage Exotic GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1964 Aston Martin DB5",
+"division": "Sport Coupe Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1960 Aston Martin DB4 GT Zagato",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1958 Aston Martin DBR1",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2021 Audi RS e-tron GT",
+"division": "Sport Luxury",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2021 Audi RS 6 Avant",
+"division": "Sport Luxury",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2021 Audi RS 7 Sportback",
+"division": "Sport Luxury",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2020 Audi R8 V10 performance",
+"division": "Modern Sport GT",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2020 Audi TT RS Coupe",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2020 Audi RS 3 Sedan",
+"division": "Modern Sport Coupe",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2018 Audi #44 R8 LMS GT3",
+"division": "Forza GT3",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Audi #1 Audi Sport RS 3 LMS",
+"division": "Forza Touring Cars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Audi TT RS",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Audi RS 5 Coupe",
+"division": "Modern Sport Touring",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2018 Audi RS 4 Avant",
+"division": "Modern Sport Touring",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2016 Audi #17 Rotek Racing TT RS",
+"division": "Forza GT4",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2016 Audi R8 V10 plus",
+"division": "Modern Sport GT",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2015 Audi RS 6 Avant",
+"division": "Sport Luxury",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2015 Audi S1",
+"division": "Modern Hot Hatch",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2014 Audi #2 Audi Team Joest R18 e-tron quattro",
+"division": "Forza P1",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2013 Audi R8 Coupé V10 plus 5.2 FSI quattro",
+"division": "Modern Sport GT",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2013 Audi RS 7 Sportback",
+"division": "Sport Luxury",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2013 Audi RS 4 Avant",
+"division": "Modern Sport Touring",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2011 Audi RS 3 Sportback",
+"division": "Modern Hot Hatch",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2010 Audi R8 Coupé 5.2 FSI quattro",
+"division": "Modern Sport GT",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2006 Audi RS 4",
+"division": "Sport Touring Classics",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2004 Audi S4",
+"division": "Sport Touring Classics",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2003 Audi RS 6",
+"division": "Sport Touring Classics",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2001 Audi RS 4 Avant",
+"division": "Sport Touring Classics",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1995 Audi Avant RS 2",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1989 Audi #4 Audi 90 quattro IMSA GTO",
+"division": "GTX Sportscars",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1984 Audi Sport quattro",
+"division": "Sport Touring Classics",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1965 Austin-Healey 3000 MkIII",
+"division": "Sport Coupe Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1939 Auto Union Type D",
+"division": "The Birth of Grand Prix",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2020 Automobili Pininfarina Battista",
+"division": "Modern Hypercars",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2014 BAC Mono",
+"division": "Track Toys",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2017 Bentley Continental Supersports",
+"division": "Sport Luxury",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2014 Bentley #17 M-Sport Bentley Continental GT3",
+"division": "Forza GT3",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2003 Bentley #7 Team Bentley Speed 8",
+"division": "Early LMP",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2023 BMW #25 BMW Team RLL M Hybrid V8",
+"division": "Forza Proto-H",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2023 BMW #96 Turner Motorsports M4 GT3",
+"division": "Forza GT3",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2023 BMW M2",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2021 BMW M3 Competition Sedan",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2021 BMW M4 Competition Coupé",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2020 BMW M8 Competition Coupé",
+"division": "Sport Luxury",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2020 BMW M2 Competition Coupé",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2019 BMW Z4 Roadster",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 BMW #1 BMW M Motorsport M8 GTE",
+"division": "Forza GT2",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 BMW M5",
+"division": "Sport Luxury",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 BMW #24 BMW Team RLL M6 GTLM",
+"division": "Forza GT2",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2016 BMW M4 GTS",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 BMW i8",
+"division": "Sport Luxury",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2014 BMW M4 Coupé",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2013 BMW M6 Coupé",
+"division": "Sport Luxury",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2012 BMW M5",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2011 BMW 1 Series M Coupé",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2010 BMW M3 GTS",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2010 BMW M6 Coupé",
+"division": "Sport Luxury",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2009 BMW M5",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2008 BMW M3",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2005 BMW M3",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2003 BMW M5",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2002 BMW M3-GTR",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2002 BMW Z3 M Coupé",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2000 BMW 323ti Sport",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1999 BMW #16 BMW Motorsport V12 LMR",
+"division": "Early LMP",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1999 BMW #15 BMW Motorsport V12 LMR",
+"division": "Early LMP",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1997 BMW M3",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1995 BMW 850CSi",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1991 BMW M3",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1988 BMW M5",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1986 BMW M635 CSi",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1981 BMW M1",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1979 BMW #6 BMW Motorsport M1 Procar",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1976 BMW #1 BMW 3.0 CSL",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1975 BMW #25 BMW Motorsport 3.0 CSL",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1973 BMW 2002 Turbo",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2019 Brabham BT62",
+"division": "Modern Factory Racecars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1967 Brabham BT24",
+"division": "Formula 60s",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1964 Brabham BT8",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1974 BRM #14 Team Motul P201",
+"division": "Formula 70s",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2019 Bugatti Divo",
+"division": "Modern Hypercars",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2018 Bugatti Chiron",
+"division": "Modern Hypercars",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2011 Bugatti Veyron Super Sport",
+"division": "Modern Hypercars",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "1992 Bugatti EB110 Super Sport",
+"division": "Exotic GT Classics",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "1926 Bugatti Type 35 C",
+"division": "The Birth of Grand Prix",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1987 Buick Regal GNX",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1985 Buick #6 Performance Motorsports Somerset Regal Trans-Am",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1970 Buick GSX",
+"division": "Street Drag Racers",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2023 Cadillac #31 Whelen Engineering Cadillac Racing V-Series.R",
+"division": "Forza Proto-H",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2023 Cadillac #2 Cadillac Racing V-Series.R",
+"division": "Forza Proto-H",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2023 Cadillac #01 Cadillac Racing V-Series.R",
+"division": "Forza Proto-H",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2022 Cadillac CT5-V Blackwing",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2022 Cadillac CT4-V Blackwing",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2021 Cadillac #31 Whelen Racing DPi-V.R",
+"division": "Forza Proto-H",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2018 Cadillac #57 TA CTS-V",
+"division": "Forza T/A",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2016 Cadillac CTS-V Sedan",
+"division": "Sport Luxury",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2016 Cadillac ATS-V",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Cadillac #3 Cadillac Racing ATS-V.R",
+"division": "Forza GT3",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2014 Cadillac CTS-V Sport Wagon",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2013 Caterham Superlight R500",
+"division": "Track Toys",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1966 Chaparral #66 Chaparral Cars 2E",
+"division": "Prototype Group Racing",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2025 Chevrolet IndyCar",
+"division": "IndyCar",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2024 Chevrolet NASCAR Next Gen Camaro ZL1",
+"division": "NASCAR",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2024 Chevrolet Corvette E-Ray",
+"division": "Modern Sport GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2023 Chevrolet Corvette Z06",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2020 Chevrolet #3 Corvette Racing C8.R",
+"division": "Forza GT2",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2020 Chevrolet Corvette Stingray Coupe Forza Edition",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2020 Chevrolet Corvette Stingray Coupe",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2019 Chevrolet Corvette ZR1",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Chevrolet #23 Ruman Racing TA Corvette",
+"division": "Forza T/A",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Chevrolet Camaro ZL1 1LE Forza Edition",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Chevrolet Camaro ZL1 1LE",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Chevrolet Camaro ZL1",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2016 Chevrolet Camaro Super Sport",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Chevrolet #10 Konica Minolta Corvette Daytona Prototype",
+"division": "Forza P2",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Chevrolet Corvette Z06",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2014 Chevrolet #3 Corvette Racing Corvette C7.R",
+"division": "Forza GT2",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2010 Chevrolet #55 Level 5 Motorsports Oreca FLM09",
+"division": "Forza P2",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2009 Chevrolet Corvette ZR1",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2002 Chevrolet Corvette Z06",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2002 Chevrolet Camaro 35th Anniversary Super Sport",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1995 Chevrolet Corvette ZR-1",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1990 Chevrolet Camaro IROC-Z",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1988 Chevrolet Monte Carlo Super Sport",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1988 Chevrolet #77 Beretta Trans Am",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1976 Chevrolet #76 Greenwood Corvette",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1970 Chevrolet Corvette ZR-1",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1970 Chevrolet Chevelle Super Sport 454",
+"division": "Street Drag Racers",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1970 Chevrolet Camaro Z28",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1969 Chevrolet Nova Super Sport 396",
+"division": "Street Drag Racers",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1969 Chevrolet Camaro Jordan Luka 3 Motorsport Edition",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1969 Chevrolet Camaro Super Sport Coupe",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1967 Chevrolet Corvette Stingray 427",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1964 Chevron B16",
+"division": "Vintage Le Mans Prototypes",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1972 Chrysler VH Valiant Charger R/T E49",
+"division": "Street Drag Racers",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2011 Citroën DS 3 Racing",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1979 Datsun #33 280ZX Turbo",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1970 Datsun 510",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1969 Datsun 2000 Roadster",
+"division": "Sport Coupe Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1984 De Tomaso Pantera GT5",
+"division": "Vintage Exotic GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2019 Dodge #9 American V8 Road Racing TA Challenger",
+"division": "Forza T/A",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Dodge Challenger SRT Demon",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2016 Dodge Viper ACR",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Dodge Charger SRT Hellcat",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2014 Dodge #93 SRT Motorsports Viper GTS-R",
+"division": "Forza GT2",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2013 Dodge Dart GT",
+"division": "Modern Sport Compact",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2012 Dodge Challenger SRT8",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2008 Dodge Viper SRT10 ACR",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2005 Dodge SRT-4 ACR",
+"division": "Early Sport Compact",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1999 Dodge Viper GTS ACR",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1996 Dodge Stealth R/T Turbo",
+"division": "Early Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1986 Dodge Shelby Omni GLHS",
+"division": "Hot Hatch Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1970 Dodge Coronet Super Bee",
+"division": "Street Drag Racers",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1970 Dodge Challenger R/T",
+"division": "Street Drag Racers",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1969 Dodge Charger Daytona HEMI",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1969 Dodge Charger R/T",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2013 Donkervoort D8 GTO",
+"division": "Track Toys",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1998 Eagle Talon TSi Turbo",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1967 Eagle-Weslake T1G",
+"division": "Formula 60s",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2019 Elemental RP1",
+"division": "Track Toys",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2018 Exomotive Exocet Sport V8 XP-5",
+"division": "Track Toys",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2022 Ferrari 296 GTB",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2020 Ferrari SF90 Stradale",
+"division": "Modern Exotic GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2020 Ferrari Roma",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2019 Ferrari #62 Risi Competizione 488 GTE",
+"division": "Forza GT2",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2019 Ferrari 488 Pista",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2019 Ferrari F8 Tributo",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2019 Ferrari Monza SP2",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Ferrari FXX-K Evo",
+"division": "Modern Factory Racecars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2018 Ferrari Portofino",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Ferrari #25 Corse Clienti 488 Challenge",
+"division": "488 Challenge Spec",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2017 Ferrari 812 Superfast",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Ferrari J50",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Ferrari F12tdf",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Ferrari 488 GTB",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2014 Ferrari FXX K",
+"division": "Modern Factory Racecars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2014 Ferrari California T",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2013 Ferrari LaFerrari",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2013 Ferrari 458 Speciale",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2012 Ferrari 599XX Evolution",
+"division": "Modern Factory Racecars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2011 Ferrari #62 Risi Competizione F458 Italia GTC",
+"division": "Forza GT3",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2010 Ferrari 599XX",
+"division": "Modern Factory Racecars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2009 Ferrari 458 Italia",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2007 Ferrari 430 Scuderia",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2003 Ferrari 360 Challenge Stradale",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2002 Ferrari Enzo Ferrari",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2002 Ferrari 575M Maranello",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1998 Ferrari #12 Risi Competizione F333 SP",
+"division": "Early LMP",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1996 Ferrari F50 GT",
+"division": "Early Factory Racecars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1995 Ferrari F50",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1994 Ferrari F355 Berlinetta",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1992 Ferrari 512 TR",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1990 Ferrari #1 Scuderia Ferrari 641",
+"division": "Grand Prix Rivals",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1989 Ferrari F40 Competizione",
+"division": "Early Factory Racecars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1987 Ferrari F40",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1984 Ferrari 288 GTO",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1982 Ferrari #72 N.A.R.T. 512 BB/LM",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1976 Ferrari #1 Scuderia Ferrari 312 T2",
+"division": "Formula 70s",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1970 Ferrari 512 S",
+"division": "Vintage Le Mans Prototypes",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1969 Ferrari Dino 246 GT",
+"division": "Vintage Exotic GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1967 Ferrari #24 Ferrari Spa 330 P4",
+"division": "Vintage Le Mans Prototypes",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1964 Ferrari F-158",
+"division": "Formula 60s",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1963 Ferrari 250LM",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1962 Ferrari 250 GTO",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1962 Ferrari 250 GT Berlinetta Lusso",
+"division": "Sport Coupe Icons",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1957 Ferrari 250 Testa Rossa",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1953 Ferrari 500 Mondial",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1948 Ferrari 166 Inter Sport",
+"division": "The Birth of Grand Prix",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2024 Ford NASCAR Next Gen Mustang Dark Horse",
+"division": "NASCAR",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2024 Ford #25 Mustang RTR",
+"division": "Formula Drift",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2024 Ford #88 Mustang RTR",
+"division": "Formula Drift",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2024 Ford #130 Mustang RTR",
+"division": "Formula Drift",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2024 Ford Mustang Dark Horse",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2024 Ford Mustang GT",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2024 Ford Mustang GT3",
+"division": "Forza GT3",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2020 Ford Mustang Shelby GT500",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Ford #98 Breathless Pro Racing TA Mustang",
+"division": "Forza T/A",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Ford Mustang GT",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Ford GT",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2017 Ford #17 Shell V-Power Racing Team Falcon FG X",
+"division": "Forza AUS",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Ford Focus RS",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2016 Ford #66 Ford Racing GT Le Mans",
+"division": "Forza GT2",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2016 Ford Shelby GT-350R",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Ford #02 Chip Ganassi Racing Riley Mk XXVI Daytona Prototype",
+"division": "Forza P2",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2015 Ford Falcon GT F 351",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2014 Ford FPV Limited Edition Pursuit Ute",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2014 Ford #17 AMD Tuning Focus ST BTCC",
+"division": "Forza Touring Cars",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2013 Ford Shelby GT500",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2009 Ford Focus RS",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2005 Ford Ford GT",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2003 Ford Focus RS",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2000 Ford SVT Cobra R",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1999 Ford Racing Puma",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1995 Ford Mustang SVT Cobra R",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1993 Ford SVT Cobra R",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1992 Ford Escort RS Cosworth",
+"division": "Hot Hatch Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1992 Ford Falcon GT",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1991 Ford #15 Roush Racing Whistler Mustang",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1987 Ford Sierra Cosworth RS500",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1986 Ford Mustang SVO",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1986 Ford Escort RS Turbo",
+"division": "Hot Hatch Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1982 Ford #6 Zakspeed Roush Mustang IMSA GT",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1981 Ford #2 Zakspeed Racing Capri Turbo",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1981 Ford Fiesta XR2",
+"division": "Hot Hatch Icons",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1977 Ford Escort RS1800",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1973 Ford XB Falcon GT",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1973 Ford Escort RS1600",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1972 Ford Falcon XA GT-HO",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1970 Ford #15 Mustang Boss 302 Trans Am",
+"division": "Vintage Trans Am",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1969 Ford Mustang Boss 302",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1968 Ford Mustang GT 2+2 Fastback",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1966 Ford #2 GT40 MkII Le Mans",
+"division": "Vintage Le Mans Prototypes",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1966 Ford Lotus Cortina",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1965 Ford Mustang GT Coupe",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1964 Ford GT40 Mk I",
+"division": "Vintage Le Mans Prototypes",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2020 Formula Drift #91 BMW M2",
+"division": "Formula Drift",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2020 Formula Drift #151 Toyota GR Supra",
+"division": "Formula Drift",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2016 Formula Drift #530 HSV Maloo Gen-F",
+"division": "Formula Drift",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Formula Drift #13 Ford Mustang",
+"division": "Formula Drift",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2006 Formula Drift #43 Dodge Viper SRT10",
+"division": "Formula Drift",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2001 Formula Drift #215 Nissan Silvia Spec-R",
+"division": "Formula Drift",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1995 Formula Drift #34 Toyota Supra MKIV",
+"division": "Formula Drift",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1997 Formula Drift #777 Nissan 240SX",
+"division": "Formula Drift",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1975 Forsberg Racing Nissan ‘Gold Leader’ Datsun 280Z",
+"division": "Formula Drift",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2019 Ginetta #6 Team LNT Ginetta G60-LT-P1",
+"division": "Forza P1",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2019 Ginetta G55 GT4",
+"division": "Forza GT4",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2019 Ginetta G40 Junior",
+"division": "G40 Junior Spec",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2022 Gordon Murray Automotive T.50",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2019 Hennessey Camaro Exorcist",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1985 HDT VK Commodore Group A",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Holden #22 Walkinshaw Performance VF Commodore",
+"division": "Forza AUS",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2013 Holden #10 Holden Xbox Racing Team Commodore VF",
+"division": "Forza AUS",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1991 Holden HSV Commodore Group A SV",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1988 Holden VL Commodore Group A SV",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1977 Holden Torana A9X",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1973 Holden HQ Monaro GTS 350",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1968 Holden Monaro GTS 327",
+"division": "Street Drag Racers",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2025 Honda IndyCar",
+"division": "IndyCar",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2020 Honda #73 LA Honda World Racing Civic",
+"division": "Forza Touring Cars",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2018 Honda Civic Type R",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2009 Honda S2000 CR",
+"division": "Modern Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2005 Honda NSX-R",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2004 Honda Civic Type R",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2000 Honda Prelude Type SH",
+"division": "Early Sport Compact",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1997 Honda Civic Type R",
+"division": "Hot Hatch Icons",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1992 Honda NSX-R",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1991 Honda CR-X SiR",
+"division": "Hot Hatch Icons",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1970 Honda S800",
+"division": "Sport Coupe Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1967 Honda RA300",
+"division": "Formula 60s",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2014 HSV Limited Edition Gen-F GTS Maloo",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2014 HSV GEN-F GTS",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2011 HSV GTS",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1996 HSV GTSR",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2023 Hyundai IONIQ 5 N",
+"division": "Modern Hot Hatch",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2022 Hyundai Elantra N",
+"division": "Modern Sport Compact",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2021 Hyundai #98 Bryan Herta Autosport Elantra N",
+"division": "Forza Touring Cars",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2021 Hyundai i20 N",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2020 Hyundai i30 N",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2020 Hyundai #98 Bryan Herta Autosport Veloster N",
+"division": "Forza Touring Cars",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2019 Hyundai Veloster N Forza Edition",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2019 Hyundai Veloster N",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2014 Infiniti Q50 Eau Rouge",
+"division": "Sport Luxury",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2012 Infiniti IPL G Coupe",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2003 Infiniti G35 Coupe",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Jaguar F-TYPE R Coupé",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Jaguar XKR-S GT",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Jaguar XFR-S",
+"division": "Sport Luxury",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1993 Jaguar XJ220S TWR",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1993 Jaguar XJ220",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1991 Jaguar Sport XJR-15",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1988 Jaguar #1 Jaguar Racing XJR-9",
+"division": "GTP/C",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1983 Jaguar #44 Group 44 XJR-5",
+"division": "GTP/C",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1961 Jaguar E-type",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1959 Jaguar Mk II 3.8",
+"division": "Sport Coupe Icons",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1956 Jaguar D-Type",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2020 Koenigsegg Jesko",
+"division": "Modern Hypercars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2017 Koenigsegg Agera RS",
+"division": "Modern Hypercars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2015 Koenigsegg One:1",
+"division": "Modern Hypercars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2020 KTM X-Bow GT2",
+"division": "Modern Factory Racecars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2018 KTM X-Bow GT4",
+"division": "Forza GT4",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2013 KTM X-Bow R",
+"division": "Track Toys",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2024 Lamborghini SC63",
+"division": "Forza Proto-H",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2024 Lamborghini Revuelto",
+"division": "Modern Exotic GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2022 Lamborghini Huracán EVO Spyder",
+"division": "Modern Sport GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2021 Lamborghini Countach LPI 800-4",
+"division": "Modern Hypercars",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2020 Lamborghini Essenza SCV12",
+"division": "Modern Factory Racecars",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2020 Lamborghini Huracán STO",
+"division": "Modern Sport GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2020 Lamborghini Huracán EVO",
+"division": "Modern Sport GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2019 Lamborghini Sián FKP 37",
+"division": "Modern Hypercars",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2018 Lamborghini #63 Squadra Corse Huracán Super Trofeo Evo",
+"division": "Super Trofeo",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2018 Lamborghini Aventador SVJ",
+"division": "Modern Exotic GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2018 Lamborghini Huracán Performante",
+"division": "Modern Sport GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2016 Lamborghini Centenario LP 770-4",
+"division": "Modern Exotic GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2016 Lamborghini Aventador Superveloce",
+"division": "Modern Exotic GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2015 Lamborghini #63 Squadra Corse Huracan LP620-2 Super Trofeo",
+"division": "Super Trofeo",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2014 Lamborghini Huracán LP 610-4",
+"division": "Modern Sport GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2013 Lamborghini Veneno",
+"division": "Modern Hypercars",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2012 Lamborghini Aventador J",
+"division": "Modern Exotic GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2011 Lamborghini Sesto Elemento",
+"division": "Modern Sport GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2011 Lamborghini Gallardo LP 570-4 Superleggera",
+"division": "Modern Sport GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2010 Lamborghini Murciélago LP 670-4 SV",
+"division": "Modern Exotic GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2008 Lamborghini Revénton",
+"division": "Modern Exotic GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "1999 Lamborghini Diablo GTR",
+"division": "Early Factory Racecars",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "1997 Lamborghini Diablo SV",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1988 Lamborghini Countach LP5000 QV",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1973 Lamborghini Espada 400 GT",
+"division": "Vintage Exotic GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1972 Lamborghini Jarama S",
+"division": "Vintage Exotic GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1967 Lamborghini Miura P400",
+"division": "Vintage Exotic GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1992 Lancia Delta HF Integrale EVO",
+"division": "Hot Hatch Icons",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2021 Lexus LC 500",
+"division": "Sport Luxury",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2020 Lexus #14 VASSER SULLIVAN RC F GT3",
+"division": "Forza GT3",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2020 Lexus RC F Track Edition",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Lexus RC F",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2014 Lexus IS 350 F Sport",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2013 Lexus GS350 F Sport",
+"division": "Sport Luxury",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2010 Lexus LFA",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2016 Ligier #11 Euro International JS P3",
+"division": "Forza P3",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1969 Lola #10 Simoniz Special T163",
+"division": "Prototype Group Racing",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1969 Lola #6 Sunoco T70 MkIIIB",
+"division": "Prototype Group Racing",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2023 Lotus Emira",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2020 Lotus Evija",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2018 Lotus Evora GT430",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2016 Lotus 3-Eleven",
+"division": "Track Toys",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2011 Lotus Evora S",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2002 Lotus Esprit V8",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1986 Lotus #12 Team Lotus 98T",
+"division": "Grand Prix Rivals",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1976 Lotus #5 Team Lotus 77",
+"division": "Formula 70s",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1971 Lotus Elan Sprint",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1967 Lotus Type 49",
+"division": "Formula 60s",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1965 Lotus #1 Team Lotus Type 40",
+"division": "Vintage Le Mans Prototypes",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1965 Lotus Team Lotus type 35",
+"division": "Formula 60s",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2021 Lynk & Co 03+",
+"division": "Modern Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2020 Lynk & Co #62 Cyan Racing 03",
+"division": "Forza Touring Cars",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2014 Maserati Ghibli S Q4",
+"division": "Sport Luxury",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2004 Maserati MC12",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1997 Maserati Ghibli Cup",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1961 Maserati Tipo 61 Birdcage",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1957 Maserati 300 S",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1953 Maserati A6GCS/53 PininFarina Berlinetta",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1939 Maserati 8CTF",
+"division": "The Birth of Grand Prix",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1970 Matra-Simca #146 Equipe Matra-Simca MS650 Tour de France",
+"division": "Vintage Le Mans Prototypes",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2022 Mazda MX-5 Miata RF",
+"division": "Modern Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Mazda MX-5 Cup",
+"division": "Forza Specials",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2016 Mazda MX-5",
+"division": "Modern Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Mazda Formula Mazda",
+"division": "Formula Mazda Spec",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2014 Mazda #70 SpeedSource Lola B12/80",
+"division": "Forza P2",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2013 Mazda MX-5",
+"division": "Modern Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2011 Mazda RX-8 R3",
+"division": "Modern Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2010 Mazda #16 Mazda Racing B09/86",
+"division": "Forza P2",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2008 Mazda Furai",
+"division": "Forza Specials",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2002 Mazda RX-7 Spirit R Type-A",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1997 Mazda RX-7",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1994 Mazda MX-5 Miata",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1992 Mazda 323 GT-R",
+"division": "Hot Hatch Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1991 Mazda #55 Mazda 787B",
+"division": "GTP/C",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1991 Mazda #62 RX-7",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1990 Mazda Savanna RX-7",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1990 Mazda MX-5 Miata",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1985 Mazda RX-7 GSL-SE",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1973 Mazda RX-3",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1972 Mazda Cosmo 110S Series II",
+"division": "Sport Coupe Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2023 McLaren Artura",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2021 McLaren 765LT Coupe",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2021 McLaren Sabre",
+"division": "Modern Hypercars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2021 McLaren 620R",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2020 McLaren GT",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2019 McLaren Senna GTR",
+"division": "Modern Factory Racecars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2019 McLaren #03 720S GT3",
+"division": "Forza GT3",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2019 McLaren 720S Spider",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2018 McLaren Senna",
+"division": "Modern Hypercars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2018 McLaren 720S Coupe",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2018 McLaren 600LT Coupé",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2015 McLaren P1 GTR",
+"division": "Modern Factory Racecars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2015 McLaren 650S Coupe",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2013 McLaren P1",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1997 McLaren F1 GT",
+"division": "Early Factory Racecars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1993 McLaren F1",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1988 McLaren #12 Honda McLaren MP4/4",
+"division": "Grand Prix Rivals",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1976 McLaren #11 Team McLaren M23",
+"division": "Formula 70s",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1969 McLaren #4 McLaren Cars M8B",
+"division": "Prototype Group Racing",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1966 McLaren #4 Bruce McLaren Motor Racing M1B",
+"division": "Prototype Group Racing",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1966 McLaren M2B",
+"division": "Formula 60s",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2021 Mercedes-AMG Mercedes-AMG ONE",
+"division": "Modern Hypercars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2020 Mercedes-AMG GT Black Series",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Mercedes-AMG GT3",
+"division": "Forza GT3",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Mercedes-AMG GT 4-Door Coupé",
+"division": "Sport Luxury",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Mercedes-AMG E 63 S",
+"division": "Sport Luxury",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Mercedes-AMG GT R",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2016 Mercedes-AMG C 63 S Coupé Forza Edition",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2016 Mercedes-AMG C 63 S Coupé",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Mercedes-Benz #33 Mac Tools Ciceley Motorsports A-Class (A45)",
+"division": "Forza Touring Cars",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2013 Mercedes-Benz A 45 AMG",
+"division": "Modern Hot Hatch",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2012 Mercedes-Benz C 63 AMG Coupé Black Series",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2012 Mercedes-Benz SLK 55 AMG",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2011 Mercedes-Benz SLS AMG",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2009 Mercedes-Benz SL 65 AMG Black Series",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2004 Mercedes-Benz C 32 AMG",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1998 Mercedes-Benz AMG CLK GTR",
+"division": "Early Factory Racecars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1990 Mercedes-Benz 190E 2.5-16 Evolution II",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1989 Mercedes-Benz #63 Sauber-Mercedes C 9",
+"division": "GTP/C",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1955 Mercedes-Benz 300 SLR",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1954 Mercedes-Benz 300 SL Coupé",
+"division": "Sport Coupe Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1939 Mercedes-Benz W154",
+"division": "The Birth of Grand Prix",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1990 Mercury #15 Whistler Radar Cougar XR-7",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1970 Mercury Cougar Eliminator",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1986 Merkur #11 MAC Tools XR4Ti",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2021 MG MG6 XPower",
+"division": "Modern Sport Touring",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2020 MG #20 MG6 XPower",
+"division": "Forza Touring Cars",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1966 MG MGB GT",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1958 MG MGA Twin-Cam",
+"division": "Sport Coupe Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2021 MINI John Cooper Works GP",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2012 MINI John Cooper Works GP",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1965 MINI Cooper S",
+"division": "Vintage Sport Compact",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2008 Mitsubishi Lancer Evolution X GSR",
+"division": "Modern Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2006 Mitsubishi Lancer Evolution IX MR",
+"division": "Modern Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2005 Mitsubishi #1 Sierra Sierra Enterprises Lancer Evolution Time Attack",
+"division": "Forza Specials",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2004 Mitsubishi Lancer Evolution VIII MR",
+"division": "Early Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1999 Mitsubishi Lancer Evolution VI GSR",
+"division": "Early Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1998 Mitsubishi FTO GP Version R",
+"division": "Early Sport Compact",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1997 Mitsubishi GTO",
+"division": "Early Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1995 Mitsubishi Lancer Evolution III GSR",
+"division": "Early Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1995 Mitsubishi Eclipse GSX",
+"division": "Early Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1992 Mitsubishi Galant VR-4",
+"division": "Early Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2016 NIO EP9",
+"division": "Modern Hypercars",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2024 Nissan Z NISMO",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2023 Nissan Z",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2020 Nissan GT-R NISMO (R35)",
+"division": "Modern Sport GT",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2019 Nissan 370Z Nismo",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Nissan Sentra NISMO",
+"division": "Modern Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Nissan Altima Racecar",
+"division": "Forza AUS",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Nissan GT-R (R35)",
+"division": "Modern Sport GT",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2015 Nissan #23 GT-R LM NISMO",
+"division": "Forza P1",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2003 Nissan Fairlady Z",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2002 Nissan Skyline GT-R V-Spec II",
+"division": "Sport GT Icons",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2000 Nissan Silvia Spec-R",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1999 Nissan #23 NISMO Clarion R391",
+"division": "Early LMP",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1998 Nissan R390 (GT1)",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1998 Nissan Silvia K's Aero",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1998 Nissan #23 Pennzoil NISMO Skyline GT-R",
+"division": "GTX Sportscars",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1997 Nissan Skyline GT-R V-Spec",
+"division": "Sport GT Icons",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1994 Nissan Fairlady Z Version S Twin Turbo",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1994 Nissan Silvia K's",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1993 Nissan Skyline GT-R V-Spec",
+"division": "Sport GT Icons",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1993 Nissan 240SX SE",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1992 Nissan Silvia CLUB K's",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1991 Nissan #23 Nissan R91CP",
+"division": "GTP/C",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1990 Nissan Pulsar GTi-R",
+"division": "Early Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1988 Nissan #24 Nissan Motorsports International R88C",
+"division": "GTP/C",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1988 Nissan #33 Bob Sharp Racing 300ZX",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1987 Nissan Skyline GTS-R (HR31)",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1985 Nissan #83 GTP ZX-Turbo",
+"division": "GTP/C",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1984 Nissan #20 Bluebird Super Silhouette",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1984 Nissan #11 Tomica Skyline Turbo Super Silhouette",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1983 Nissan #23 Nissan Motorsports Silvia Super Silhouette",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1973 Nissan Skyline H/T 2000GT-R",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1971 Nissan Skyline 2000GT-R",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1969 Nissan #21 Nissan Racing R382",
+"division": "Prototype Group Racing",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1969 Nissan Fairlady Z 432",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1967 Nissan R380 II",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1990 Oldsmobile #75 Cutlass Supreme Trans Am",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1969 Oldsmobile Hurst/Olds 442",
+"division": "Street Drag Racers",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1979 Opel Kadett C GT/E",
+"division": "Vintage Sport Compact",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2020 Oreca #38 Performance Tech Motorsports Oreca 07",
+"division": "Forza P2",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2017 Oreca #38 Jackie Chan DC Racing Oreca 07",
+"division": "Forza P2",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2022 Pagani Huayra R",
+"division": "Modern Factory Racecars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2016 Pagani Huayra BC",
+"division": "Modern Hypercars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2009 Pagani Zonda Cinque Roadster",
+"division": "Modern Hypercars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2018 Peugeot #7 DG Sport Compétition 308",
+"division": "Forza Touring Cars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2011 Peugeot 308 GTI",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1993 Peugeot #3 Peugeot Talbot Sport 905 EVO 1C",
+"division": "GTP/C",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1984 Peugeot 205 Turbo 16",
+"division": "Hot Hatch Icons",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1971 Plymouth Cuda 426 HEMI",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1971 Plymouth GTX 426 HEMI",
+"division": "Street Drag Racers",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2002 Pontiac Firebird Trans Am Ram Air",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1987 Pontiac Firebird Trans Am GTA",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1973 Pontiac Firebird Trans Am SD-455",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1969 Pontiac GTO Judge",
+"division": "Street Drag Racers",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1969 Pontiac Firebird Trans Am",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2024 Porsche #5 Porsche Penske Motorsport 963",
+"division": "Forza Proto-H",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2023 Porsche 911 Turbo S",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2023 Porsche 911 GT3 R",
+"division": "Forza GT3",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2023 Porsche 911 GT3 RS",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2022 Porsche 718 Cayman GT4 RS",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2021 Porsche Mission R",
+"division": "Mission R Spec",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2021 Porsche 911 GT3",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2020 Porsche Taycan Turbo S",
+"division": "Sport Luxury",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2019 Porsche #70 Porsche Motorsport 935",
+"division": "Modern Factory Racecars",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2019 Porsche 911 GT3 RS",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2019 Porsche 911 Speedster",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2019 Porsche 911 Carrera S",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2018 Porsche 911 GT2 RS Forza Edition",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2018 Porsche 911 GT2 RS",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2018 Porsche #73 Park Place Motorsports 911 GT3 R",
+"division": "Forza GT3",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2018 Porsche 718 Cayman GTS",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2017 Porsche #2 Porsche Team 919 Hybrid",
+"division": "Forza P1",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2017 Porsche #92 Porsche GT Team 911 RSR",
+"division": "Forza GT2",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2017 Porsche Panamera Turbo",
+"division": "Sport Luxury",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2016 Porsche Cayman GT4",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2016 Porsche 911 GT3 RS",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2015 Porsche #91 Porsche Team Manthey 991 RSR",
+"division": "Forza GT2",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Porsche Cayman GTS",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2014 Porsche 918 Spyder",
+"division": "Modern Exotic GT",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2014 Porsche 911 Turbo S",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2012 Porsche 911 GT2 RS",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2007 Porsche 911 GT3",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2004 Porsche 911 GT3",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "2003 Porsche Carrera GT",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1997 Porsche 911 GT1 Strassenversion",
+"division": "Early Factory Racecars",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "1995 Porsche 911 GT2",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "1993 Porsche 911 Turbo S Leichtbau",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "1993 Porsche 968 Turbo S",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1993 Porsche 928 GTS",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1989 Porsche 944 Turbo",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1987 Porsche #203 Porsche AG 961",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "1987 Porsche #17 Porsche AG 962c",
+"division": "GTP/C",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1987 Porsche 959",
+"division": "Exotic GT Classics",
+"dt": "AWD",
+"layout": "rear"
+},
+{
+"name": "1983 Porsche #11 John Fitzpatrick Racing 956",
+"division": "GTP/C",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1982 Porsche 911 Turbo 3.3",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "1981 Porsche #1 Porsche System Engineering 924 GTP Le Mans",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1980 Porsche 924 Carrera GTS",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1978 Porsche #78 MOMO 935/78",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "1978 Porsche #43 Porsche Racing 935/78",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "1974 Porsche #1 911 RSR",
+"division": "GTX Sportscars",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "1973 Porsche 911 Carrera RS",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "1971 Porsche #23 917/20",
+"division": "Vintage Le Mans Prototypes",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1970 Porsche #3 917 LH",
+"division": "Vintage Le Mans Prototypes",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1970 Porsche 914/6",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1960 Porsche 718 RS 60",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1957 Porsche 356A Speedster",
+"division": "Sport Coupe Icons",
+"dt": "RWD",
+"layout": "rear"
+},
+{
+"name": "1955 Porsche 550 Spyder",
+"division": "Sport Coupe Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Radical RXC Turbo",
+"division": "Track Toys",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2019 RAESR Tachyon Speed",
+"division": "Modern Hypercars",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2018 Renault Megane R.S.",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2016 Renault Clio R.S. 16 Concept",
+"division": "Modern Hot Hatch",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2008 Renault Mégane R26.R",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2003 Renault Sport Clio V6",
+"division": "Modern Hot Hatch",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1993 Renault Clio Williams",
+"division": "Hot Hatch Icons",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1980 Renault 5 Turbo",
+"division": "Hot Hatch Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1977 Renault #15 Equipe Renault Elf R.S. 01",
+"division": "Formula 70s",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1967 Renault 8 Gordini",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2021 Rimac Nevera",
+"division": "Modern Hypercars",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2019 Rimac Concept Two",
+"division": "Modern Hypercars",
+"dt": "AWD",
+"layout": "mid"
+},
+{
+"name": "2018 Saleen S302 Black Label",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 Saleen S1",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 Saleen S7 LM",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2004 Saleen S7",
+"division": "Exotic GT Classics",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1967 Shelby GT 500",
+"division": "Vintage Muscle",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1965 Shelby Cobra Daytona Coupe",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1965 Shelby Cobra 427 S/C",
+"division": "Vintage Le Mans Sportscars",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1963 Shelby Monaco King Cobra",
+"division": "Vintage Le Mans Prototypes",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2016 Spania GTA GTA Spano",
+"division": "Modern Exotic GT",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2013 SRT Viper GTS",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2022 SUBARU BRZ",
+"division": "Modern Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2019 SUBARU STI S209 Forza Edition",
+"division": "Modern Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2019 SUBARU STI S209",
+"division": "Modern Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2018 SUBARU #1 Adrian Flux SUBARU Racing Levorg GT",
+"division": "Forza Touring Cars",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2015 SUBARU WRX STI",
+"division": "Modern Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2013 SUBARU BRZ",
+"division": "Modern Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2011 SUBARU WRX STI",
+"division": "Modern Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2008 SUBARU IMPREZA WRX STI",
+"division": "Modern Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2005 SUBARU IMPREZA WRX STi",
+"division": "Modern Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2004 SUBARU IMPREZA WRX STI",
+"division": "Early Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1998 SUBARU Impreza 22B-STi Version",
+"division": "Early Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1990 SUBARU LEGACY RS",
+"division": "Early Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2024 Toyota NASCAR Next Gen Camry XSE",
+"division": "NASCAR",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2023 Toyota Camry TRD",
+"division": "Modern Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2022 Toyota GR86",
+"division": "Modern Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2021 Toyota GR Yaris",
+"division": "Modern Hot Hatch",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2020 Toyota GR Supra",
+"division": "Modern Sport Coupe",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2019 Toyota 86 TRD SE",
+"division": "Modern Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2014 Toyota #8 Toyota Racing TS040 HYBRID",
+"division": "Forza P1",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2003 Toyota Celica Sport Specialty II",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1999 Toyota #3 Toyota Motorsports GT-ONE TS020",
+"division": "Early LMP",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1998 Toyota Supra RZ",
+"division": "Sport GT Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1997 Toyota Mark II Tourer V JZX100",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1995 Toyota MR2 GT",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1994 Toyota Celica GT-Four ST205",
+"division": "Early Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1992 Toyota #99 All American Racers Toyota Eagle MkIII",
+"division": "GTP/C",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1992 Toyota Celica GT-Four RC ST185",
+"division": "Early Sport Compact",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1992 Toyota Supra 2.0 GT",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1989 Toyota MR2 SC",
+"division": "Early Sport Compact",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "1985 Toyota Sprinter Trueno GT Apex",
+"division": "Hot Hatch Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1984 Toyota #25 Horsepower Techs Starlet Time Attack",
+"division": "Forza Specials",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1974 Toyota Celica GT",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1974 Toyota Corolla SR5",
+"division": "Vintage Sport Compact",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "1969 Toyota 2000GT",
+"division": "Sport Coupe Icons",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2018 TVR Griffith",
+"division": "Modern Sport GT",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2015 Ultima Evolution Coupe 1020",
+"division": "Track Toys",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2017 Vauxhall #66 Power Maxed TAG Racing Astra",
+"division": "Forza Touring Cars",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2016 Vauxhall Corsa VXR",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2012 Vauxhall Astra VXR",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2006 Vauxhall Astra VXR",
+"division": "Modern Hot Hatch",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1990 Vauxhall Lotus Carlton",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2022 Volkswagen Golf R",
+"division": "Modern Hot Hatch",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2021 Volkswagen Golf R",
+"division": "Modern Hot Hatch",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2018 Volkswagen #22 Experion Racing Golf GTI",
+"division": "Forza Touring Cars",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "2014 Volkswagen Golf R",
+"division": "Modern Hot Hatch",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "2003 Volkswagen Golf R32",
+"division": "Modern Hot Hatch",
+"dt": "AWD",
+"layout": "front"
+},
+{
+"name": "1998 Volkswagen Gti VR6 Mk3",
+"division": "Hot Hatch Icons",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1995 Volkswagen Corrado VR6",
+"division": "Hot Hatch Icons",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1992 Volkswagen Golf Gti 16v Mk2",
+"division": "Hot Hatch Icons",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1988 Volkswagen Scirocco 16v",
+"division": "Hot Hatch Icons",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1983 Volkswagen Golf GTI",
+"division": "Hot Hatch Icons",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1981 Volkswagen Scirocco S",
+"division": "Hot Hatch Icons",
+"dt": "FWD",
+"layout": "front"
+},
+{
+"name": "1997 Volvo 850 R",
+"division": "Sport Touring Classics",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2017 VUHL 05RR",
+"division": "Track Toys",
+"dt": "RWD",
+"layout": "mid"
+},
+{
+"name": "2020 Xpeng P7",
+"division": "Modern Sport Touring",
+"dt": "RWD",
+"layout": "front"
+},
+{
+"name": "2019 Zenvo TSR-S",
+"division": "Modern Hypercars",
+"dt": "RWD",
+"layout": "mid"
+}
+];
+</script>
+<script>
+/*
+ * Forza Motorsport (2023) — TRACK ROSTER
+ * ------------------------------------------------------------------
+ * All 30 locations (24 real + 6 fictional) from the final content build
+ * (through Fujimi Kaido, May 2025). The main layout configurations are
+ * listed; a few venues have more in-game variations than shown.
+ *
+ * Fields:
+ *   venue     : location name (used for grouping)
+ *   layout    : configuration name (as it commonly appears in-game)
+ *   type      : 'circuit' | 'oval' | 'touge'
+ *   character : 'technical' | 'mixed' | 'high-speed'  (drives the track toggle)
+ *   flags     : tuning-relevant traits — the engine reacts to these:
+ *               heavy-braking, elevation, bumpy, kerbs, low-grip,
+ *               long-straight, high-speed-corners, narrow, banking
+ *   note      : one-line setup emphasis
+ *
+ * character/flags are tuning heuristics based on each circuit's real layout,
+ * not telemetry — treat them as sensible defaults and adjust to taste.
+ */
+window.FORZA_TRACKS = [
+  // Barcelona-Catalunya
+  { venue:"Circuit de Barcelona-Catalunya", layout:"Grand Prix", type:"circuit", character:"mixed", flags:["heavy-braking","kerbs","low-grip"], note:"Abrasive surface and long corners punish understeer; protect front tyres." },
+  { venue:"Circuit de Barcelona-Catalunya", layout:"National", type:"circuit", character:"mixed", flags:["kerbs"], note:"Flows better without the final sector; balance for rotation." },
+  { venue:"Circuit de Barcelona-Catalunya", layout:"Club", type:"circuit", character:"technical", flags:["kerbs"], note:"Short and tight — mechanical grip over top speed." },
+
+  // Spa
+  { venue:"Circuit de Spa-Francorchamps", layout:"Grand Prix", type:"circuit", character:"high-speed", flags:["elevation","high-speed-corners","long-straight","heavy-braking"], note:"Eau Rouge wants stability; gear for the Kemmel straight." },
+
+  // Homestead-Miami
+  { venue:"Homestead-Miami Speedway", layout:"Oval", type:"oval", character:"high-speed", flags:["banking","long-straight"], note:"Banking loads the outside; long gearing and rearward brake bias." },
+  { venue:"Homestead-Miami Speedway", layout:"Road Course", type:"circuit", character:"mixed", flags:["banking"], note:"Infield rotation plus a banked section — compromise setup." },
+
+  // Indianapolis
+  { venue:"Indianapolis Motor Speedway", layout:"Speedway Oval", type:"oval", character:"high-speed", flags:["banking","long-straight"], note:"Minimal drag, long final drive, slight rear brake bias." },
+  { venue:"Indianapolis Motor Speedway", layout:"Grand Prix", type:"circuit", character:"mixed", flags:["heavy-braking"], note:"Stop-and-go infield rewards strong braking stability." },
+
+  // Kyalami
+  { venue:"Kyalami Grand Prix Circuit", layout:"Grand Prix", type:"circuit", character:"mixed", flags:["elevation","high-speed-corners"], note:"Fast sweeps with altitude; lean on aero balance." },
+
+  // Le Mans
+  { venue:"Le Mans - Circuit de la Sarthe", layout:"Full Circuit", type:"circuit", character:"high-speed", flags:["long-straight","heavy-braking"], note:"Top-speed track with hard chicane braking — split the difference on gearing." },
+  { venue:"Le Mans - Circuit de la Sarthe", layout:"Old Mulsanne (No Chicane)", type:"circuit", character:"high-speed", flags:["long-straight"], note:"Pure top speed: longest gearing, minimum drag." },
+
+  // Lime Rock
+  { venue:"Lime Rock Park", layout:"Full Course", type:"circuit", character:"technical", flags:["elevation","kerbs","narrow"], note:"Tiny and rhythmic — soft over kerbs, quick direction changes." },
+  { venue:"Lime Rock Park", layout:"Classic (No Chicane)", type:"circuit", character:"technical", flags:["elevation","narrow"], note:"Even tighter; maximise mechanical grip." },
+
+  // Mid-Ohio
+  { venue:"Mid-Ohio Sports Car Course", layout:"Full Circuit", type:"circuit", character:"technical", flags:["elevation","kerbs"], note:"Tight, undulating, kerb-heavy — agility over speed." },
+  { venue:"Mid-Ohio Sports Car Course", layout:"Chicane", type:"circuit", character:"technical", flags:["elevation","kerbs"], note:"The chicane adds a braking test; keep the car settled." },
+
+  // Mugello
+  { venue:"Mugello Circuit", layout:"Grand Prix", type:"circuit", character:"high-speed", flags:["elevation","high-speed-corners","heavy-braking"], note:"Flowing high-speed corners then a huge stop into T1." },
+
+  // Nürburgring
+  { venue:"Nürburgring", layout:"Grand Prix", type:"circuit", character:"mixed", flags:["heavy-braking","kerbs"], note:"Balanced GP loop; strong braking and kerb compliance." },
+  { venue:"Nürburgring", layout:"Nordschleife", type:"circuit", character:"high-speed", flags:["elevation","bumpy","narrow","high-speed-corners"], note:"Bumps and blind crests demand a softer, forgiving car." },
+  { venue:"Nürburgring", layout:"24h (GP + Nordschleife)", type:"circuit", character:"high-speed", flags:["elevation","bumpy","narrow","high-speed-corners","heavy-braking"], note:"Everything at once — prioritise compliance and stability." },
+
+  // Road America
+  { venue:"Road America", layout:"Full Circuit", type:"circuit", character:"high-speed", flags:["long-straight","heavy-braking"], note:"Long straights into heavy braking zones — gearing and brakes matter most." },
+
+  // Silverstone
+  { venue:"Silverstone Circuit", layout:"Grand Prix", type:"circuit", character:"high-speed", flags:["high-speed-corners"], note:"Maggotts–Becketts rewards downforce and a stable rear." },
+  { venue:"Silverstone Circuit", layout:"National", type:"circuit", character:"mixed", flags:["high-speed-corners"], note:"Shorter but still fast; keep the rear planted." },
+  { venue:"Silverstone Circuit", layout:"International", type:"circuit", character:"mixed", flags:[], note:"Mixed rhythm — a neutral balance works well." },
+
+  // Suzuka
+  { venue:"Suzuka Circuit", layout:"Full Circuit", type:"circuit", character:"high-speed", flags:["high-speed-corners","kerbs"], note:"The Esses and 130R need a confident front and stable rear." },
+  { venue:"Suzuka Circuit", layout:"East", type:"circuit", character:"technical", flags:["kerbs"], note:"Short loop — mechanical grip and quick turn-in." },
+
+  // Virginia International Raceway
+  { venue:"Virginia International Raceway", layout:"Grand Course", type:"circuit", character:"mixed", flags:["elevation","high-speed-corners"], note:"Long and hilly with fast esses; balance for commitment." },
+  { venue:"Virginia International Raceway", layout:"Patriot", type:"circuit", character:"technical", flags:["elevation"], note:"Compact layout — favour agility." },
+
+  // Watkins Glen
+  { venue:"Watkins Glen", layout:"Full (Boot)", type:"circuit", character:"high-speed", flags:["elevation","high-speed-corners"], note:"Fast, committed corners; downforce and a stable rear." },
+  { venue:"Watkins Glen", layout:"Short (No Boot)", type:"circuit", character:"high-speed", flags:["high-speed-corners"], note:"Even faster average speed; keep it planted." },
+
+  // Laguna Seca
+  { venue:"WeatherTech Raceway Laguna Seca", layout:"Full Circuit", type:"circuit", character:"mixed", flags:["elevation","heavy-braking"], note:"The Corkscrew rewards a car that stays settled over crests." },
+
+  // Yas Marina
+  { venue:"Yas Marina Circuit", layout:"Grand Prix", type:"circuit", character:"mixed", flags:["heavy-braking","long-straight"], note:"Big stops after long straights — braking stability is key." },
+  { venue:"Yas Marina Circuit", layout:"South", type:"circuit", character:"technical", flags:["heavy-braking"], note:"Tighter section; mechanical grip and strong brakes." },
+  { venue:"Yas Marina Circuit", layout:"North", type:"circuit", character:"mixed", flags:[], note:"Balanced short layout." },
+
+  // Hockenheim
+  { venue:"Hockenheim", layout:"Grand Prix", type:"circuit", character:"mixed", flags:["heavy-braking"], note:"Stadium hairpins reward braking and traction." },
+  { venue:"Hockenheim", layout:"National", type:"circuit", character:"mixed", flags:["heavy-braking"], note:"Shorter loop; keep braking stable." },
+  { venue:"Hockenheim", layout:"Short", type:"circuit", character:"technical", flags:[], note:"Compact and tight — agility first." },
+
+  // Daytona
+  { venue:"Daytona International Speedway", layout:"Tri-Oval", type:"oval", character:"high-speed", flags:["banking","long-straight"], note:"High banking; long gearing, minimal drag, rear brake bias." },
+  { venue:"Daytona International Speedway", layout:"Road Course", type:"circuit", character:"mixed", flags:["banking","heavy-braking"], note:"Banked oval sections plus a technical infield — compromise." },
+
+  // Brands Hatch
+  { venue:"Brands Hatch", layout:"Grand Prix", type:"circuit", character:"mixed", flags:["elevation","high-speed-corners"], note:"Rolling and fast; commit through the downhill sweeps." },
+  { venue:"Brands Hatch", layout:"Indy", type:"circuit", character:"technical", flags:["elevation"], note:"Short, sharp, elevation-rich — agility over top speed." },
+
+  // Sebring
+  { venue:"Sebring International Raceway", layout:"Full Circuit", type:"circuit", character:"mixed", flags:["bumpy","heavy-braking"], note:"Notoriously bumpy — soften and raise ride height to keep contact." },
+  { venue:"Sebring International Raceway", layout:"School / Short", type:"circuit", character:"technical", flags:["bumpy"], note:"Bumpy and tight; compliance over stiffness." },
+
+  // Road Atlanta
+  { venue:"Road Atlanta", layout:"Full Circuit", type:"circuit", character:"high-speed", flags:["elevation","high-speed-corners","heavy-braking"], note:"Blind, elevated fast corners then a hard chicane stop." },
+
+  // Bathurst
+  { venue:"Mount Panorama Circuit", layout:"Full Circuit", type:"circuit", character:"high-speed", flags:["elevation","narrow","low-grip","high-speed-corners"], note:"Walls, big elevation, fast top section — stability and precision, no risks." },
+
+  // --- Fictional ---
+  { venue:"Eaglerock Speedway", layout:"Oval", type:"oval", character:"high-speed", flags:["banking","long-straight"], note:"Fictional oval; long gearing and rear brake bias." },
+
+  { venue:"Grand Oak Raceway", layout:"Grand Prix", type:"circuit", character:"mixed", flags:["heavy-braking"], note:"Balanced fictional GP; neutral setup baseline." },
+  { venue:"Grand Oak Raceway", layout:"National", type:"circuit", character:"mixed", flags:[], note:"Mid-length loop; keep it neutral." },
+  { venue:"Grand Oak Raceway", layout:"Club", type:"circuit", character:"technical", flags:[], note:"Short and tight — mechanical grip." },
+
+  { venue:"Hakone Circuit", layout:"Grand Prix", type:"circuit", character:"high-speed", flags:["elevation","high-speed-corners"], note:"Fast fictional mountain GP; downforce and stability." },
+  { venue:"Hakone Circuit", layout:"Club", type:"circuit", character:"mixed", flags:["elevation"], note:"Shorter variant; balanced with elevation changes." },
+
+  { venue:"Maple Valley", layout:"Full Circuit", type:"circuit", character:"mixed", flags:["elevation","kerbs","narrow"], note:"Classic flowing forest track; compliance over kerbs." },
+  { venue:"Maple Valley", layout:"Short", type:"circuit", character:"technical", flags:["elevation","narrow"], note:"Tight version — agility and mechanical grip." },
+
+  { venue:"Sunset Peninsula", layout:"Oval", type:"oval", character:"high-speed", flags:["banking","long-straight"], note:"Fictional superspeedway; low drag, long gearing." },
+  { venue:"Sunset Peninsula", layout:"Road Course", type:"circuit", character:"mixed", flags:["banking"], note:"Infield plus banking — compromise setup." },
+
+  { venue:"Fujimi Kaido", layout:"Full", type:"touge", character:"technical", flags:["elevation","narrow","low-grip","bumpy"], note:"Long, tight mountain road — soft, agile and forgiving; a handling test." },
+  { venue:"Fujimi Kaido", layout:"Uphill", type:"touge", character:"technical", flags:["elevation","narrow","low-grip"], note:"Traction and drive off slow corners matter most." },
+  { venue:"Fujimi Kaido", layout:"Downhill", type:"touge", character:"technical", flags:["elevation","narrow","low-grip","bumpy"], note:"Braking stability and compliance downhill; don't over-stiffen." }
+];
+</script>
+<script>
+/*
+ * Forza Motorsport (2023) — Tune Engine
+ * ------------------------------------------------------------------
+ * Pure, deterministic. generateTune(car, opts) -> structured tune.
+ * All heuristics derive from the FM2023 physics/PI model. Absolute
+ * scales used:
+ *   ARB            1–65
+ *   Dampers        1.0–20.0
+ *   Diff / brakes  % (0–100)
+ *   Springs/ride   given as % of the car's slider RANGE (car-specific)
+ * Tyre pressure, camber, toe and caster are given as absolute values.
+ */
+(function () {
+  "use strict";
+
+  var CLASS_FLOOR = { D:100, C:500, B:600, A:700, S1:800, S2:900, X:998 };
+  var CLASS_CAP   = { D:500, C:600, B:700, A:800, S1:900, S2:998, X:999 };
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function r1(v) { return Math.round(v * 10) / 10; }
+  function rHalf(v) { return Math.round(v * 2) / 2; }
+  function r0(v) { return Math.round(v); }
+  function sign(v) { return (v > 0 ? "+" : "") + v; }
+
+  // opts: { piClass, tire, layout, drivetrain, surface, tech, goal, abs, tc, issue }
+  function generateTune(car, o) {
+    var dt = o.drivetrain || car.dt;
+    var layout = o.layout || car.layout;
+    var weight = car.weight || 3000;
+    var fdist = car.fdist || 50;
+    var frontHeavy = fdist >= 55;
+    var rearEngine = layout === "rear";
+    var midEngine = layout === "mid";
+    var wet = o.surface === "wet";
+    var damp = o.surface === "damp";
+    var hispeed = o.tech === "high-speed";
+    var techy = o.tech === "technical";
+    var grip = o.goal === "grip" || o.goal === "time-attack";
+    var drift = o.goal === "drift";
+    var oval = o.goal === "oval";
+    var drag = o.goal === "drag";
+    var issue = o.issue || "none";
+
+    // ---- track context ----
+    var tk = o.track || null;
+    function tkHas(f) { return !!(tk && tk.flags && tk.flags.indexOf(f) >= 0); }
+    var tkOval = !!(tk && tk.type === "oval");
+    var tkTouge = !!(tk && tk.type === "touge");
+    var tkBumpy = tkHas("bumpy") || tkHas("elevation") || tkHas("kerbs");
+    var tkFastCorners = tkHas("high-speed-corners");
+    var tkLongStraight = tkHas("long-straight") || tkOval;
+    var tkHeavyBrake = tkHas("heavy-braking");
+    var tkLowGrip = tkHas("low-grip");
+    var tkNarrow = tkHas("narrow");
+
+    var sections = [];
+
+    /* ---------------- TYRES ---------------- */
+    var pF = 30, pR = 30;
+    if (wet) { pF -= 2; pR -= 2; } else if (damp) { pF -= 1; pR -= 1; }
+    if (hispeed) { pF += 1; pR += 1; }
+    if (dt === "RWD") pR -= 0.5;
+    if (dt === "FWD") pF -= 0.5;
+    if (drift) pR += 2;
+    pF = rHalf(clamp(pF, 24, 35)); pR = rHalf(clamp(pR, 24, 35));
+    sections.push({
+      id: "tyres", title: "Tyres",
+      items: [
+        { k: "Pressure — front", v: pF + " psi", r: "Target hot pressure; lower for grip in the " + (wet ? "wet" : "cold") + ", raise if turn-in feels vague." },
+        { k: "Pressure — rear",  v: pR + " psi", r: drift ? "Higher rear pressure = smaller contact patch to break traction." : "Balance against front; drop 1 psi if the rear steps out under power." }
+      ],
+      note: wet ? "No dedicated rain compound in FM2023 — the setup compensates. Consider one compound softer than your dry choice." : "Aim for even tyre temps across the tread after a few laps."
+    });
+
+    /* ---------------- ALIGNMENT ---------------- */
+    var cF = -1.4, cR = -0.9;
+    if (grip) { cF -= 0.4; cR -= 0.3; }
+    if (hispeed) { cF += 0.4; cR += 0.3; }
+    if (techy) cF -= 0.2;
+    if (wet) { cF += 0.5; cR += 0.4; }
+    if (dt === "FWD") cF -= 0.2;
+    if (drift) { cF = -3.5; cR = -0.5; }
+    if (issue === "understeer") cF += 0.3;
+    cF = r1(clamp(cF, -4, -0.5)); cR = r1(clamp(cR, -2.5, -0.3));
+
+    var toeF = techy ? -0.1 : 0.0;
+    var toeR = 0.1;
+    if (dt === "RWD") toeR += 0.1;
+    if (hispeed) toeR += 0.1;
+    if (wet) toeR += 0.1;
+    if (drift) { toeF = 0.0; toeR = 0.0; }
+    if (issue === "understeer") toeF -= 0.1;
+    if (issue === "snap-oversteer" || issue === "oversteer-entry") toeR += 0.1;
+    toeF = r1(clamp(toeF, -0.3, 0.2)); toeR = r1(clamp(toeR, -0.1, 0.4));
+
+    var caster = hispeed ? 6.5 : (drift ? 7.0 : 6.0);
+    if (tkFastCorners) caster = Math.min(7.0, caster + 0.5);
+    sections.push({
+      id: "align", title: "Alignment",
+      items: [
+        { k: "Camber — front", v: cF + "°", r: "More negative = more mid-corner front grip; back off if you see inside-edge wear." },
+        { k: "Camber — rear",  v: cR + "°", r: "Keep the rear flatter than the front for traction." },
+        { k: "Toe — front",    v: sign(toeF) + "°", r: toeF < 0 ? "Slight toe-out sharpens turn-in." : "Zero toe for stability at speed." },
+        { k: "Toe — rear",     v: sign(toeR) + "°", r: "Rear toe-in adds straight-line and corner-exit stability." },
+        { k: "Caster",         v: caster + "°", r: "Higher caster improves self-centring and high-speed stability (great on a wheel)." }
+      ]
+    });
+
+    /* ---------------- ANTI-ROLL BARS (1–65) ---------------- */
+    var base = clamp(20 + (weight - 2600) / 60, 12, 55);
+    var aF, aR;
+    if (dt === "FWD") { aF = base * 0.82; aR = base * 1.18; }
+    else if (dt === "RWD") { aF = base * 1.12; aR = base * 0.90; }
+    else { aF = base * 0.98; aR = base * 1.05; } // AWD
+    if (rearEngine) { aF *= 1.12; aR *= 0.95; }
+    if (frontHeavy && dt !== "FWD") { aF *= 0.95; aR *= 1.05; }
+    if (techy) { aF *= 0.9; aR *= 0.9; }
+    if (hispeed) { aF *= 1.1; aR *= 1.1; }
+    if (drift) { aF = 52; aR = 15; }
+    if (issue === "understeer") aF *= 0.82;
+    if (issue === "oversteer-exit") aR *= 0.82;
+    if (issue === "braking-instability") aR *= 0.85;
+    aF = r1(clamp(aF, 1, 65)); aR = r1(clamp(aR, 1, 65));
+    sections.push({
+      id: "arb", title: "Anti-roll Bars",
+      items: [
+        { k: "Front ARB", v: String(aF), r: "Stiffer front pushes toward understeer — your fastest single balance lever." },
+        { k: "Rear ARB",  v: String(aR), r: "Stiffer rear frees rotation. Adjust ARBs before touching springs." }
+      ],
+      note: "Change ARBs in ~2-point steps and re-test one corner type at a time."
+    });
+
+    /* ---------------- SPRINGS (% of range) ---------------- */
+    var sBase = 50;
+    if (grip || hispeed) sBase += 8;
+    if (dt === "AWD") sBase += 4;
+    if (weight > 3800) sBase += 4;
+    if (techy) sBase -= 6;
+    if (wet) sBase -= 6;
+    if (drift) sBase -= 4;
+    if (tkBumpy) sBase -= 4;
+    if (tkLowGrip) sBase -= 2;
+    sBase = clamp(sBase, 30, 78);
+    var sF = clamp(sBase + (fdist - 50) * 0.4, 25, 82);
+    var sR = clamp(sBase - (fdist - 50) * 0.4, 25, 82);
+    sF = r0(sF); sR = r0(sR);
+
+    /* ---------------- RIDE HEIGHT (% of travel, 0 = lowest) ---------------- */
+    var rh = 14;
+    if (wet) rh += 12;
+    if (techy) rh += 6;
+    if (tkBumpy) rh += 6;
+    if (drag) rh = 4;
+    var rhF, rhR;
+    if (rearEngine || midEngine) { rhF = rh + 3; rhR = rh; }
+    else { rhF = rh; rhR = rh + 5; } // front-engine rake, nose down
+    rhF = clamp(rhF, 2, 42); rhR = clamp(rhR, 2, 42);
+
+    /* ---------------- DAMPERS (1–20) ---------------- */
+    var k = sBase / 50;
+    var bump = 8 * k;
+    if (wet || techy || tkBumpy) bump *= 0.85;
+    var reb = bump * 1.2;
+    var bumpF = r1(clamp(bump * (sF / sBase), 1, 20));
+    var bumpR = r1(clamp(bump * (sR / sBase), 1, 20));
+    var rebF = r1(clamp(reb * (sF / sBase), 1, 20));
+    var rebR = r1(clamp(reb * (sR / sBase), 1, 20));
+
+    sections.push({
+      id: "springs", title: "Springs, Ride Height & Dampers",
+      items: [
+        { k: "Spring — front", v: sF + "% of range", r: "Set as % of this car's slider min→max. Stiffer resists dive/roll." },
+        { k: "Spring — rear",  v: sR + "% of range", r: "Split follows weight distribution (" + fdist + "% front)." },
+        { k: "Ride height — front", v: rhF + "% of travel", r: "0% = lowest. Lower is faster until it bottoms out." },
+        { k: "Ride height — rear",  v: rhR + "% of travel", r: (rhR > rhF ? "Slight rake (rear higher) aids turn-in on this layout." : "Near-flat rake for a mid/rear-engine car.") },
+        { k: "Bump — front / rear",    v: bumpF + " / " + bumpR, r: "Controls compression speed; soften if it skates over bumps." },
+        { k: "Rebound — front / rear", v: rebF + " / " + rebR, r: "~20% above bump so the car settles without floating." }
+      ],
+      note: (wet || techy || tkBumpy) ? "Softened and raised for compliance over bumps/kerbs/elevation here." : "If it bounces over kerbs, drop bump 1–2 points first."
+    });
+
+    /* ---------------- DIFFERENTIAL ---------------- */
+    var accel = dt === "RWD" ? 30 : (dt === "AWD" ? 20 : 45);
+    var decel = 15;
+    if (wet) accel -= 8;
+    if (drift) { accel = 90; decel = 45; }
+    if (oval) decel = 10;
+    if (!o.tc) accel += 5;
+    if (issue === "wheelspin") accel += 10;
+    if (issue === "oversteer-exit") accel -= 8;
+    if (issue === "snap-oversteer" || issue === "oversteer-entry") decel -= 5;
+    if (tkLowGrip) accel -= 5;
+    if (tkOval) accel = Math.max(accel, dt === "RWD" ? 35 : accel); // ovals reward stable power-down
+    accel = r0(clamp(accel, 0, 100)); decel = r0(clamp(decel, 0, 100));
+
+    var diffItems = [
+      { k: "Acceleration lock", v: accel + "%", r: dt === "FWD" ? "Puts FWD power down cleanly; too high forces understeer." : "Higher = more traction on exit, at the cost of some rotation." },
+      { k: "Deceleration lock", v: decel + "%", r: "Higher = sharper lift-off rotation; keep low unless you want the tail lively." }
+    ];
+    if (dt === "AWD") {
+      var rearBias = grip ? 55 : (drift ? 72 : 62);
+      diffItems.push({ k: "Centre balance", v: rearBias + "% rear", r: "More rear bias = more RWD feel and rotation; more front = safer and more planted." });
+    }
+    sections.push({ id: "diff", title: "Differential", items: diffItems });
+
+    /* ---------------- BRAKES ---------------- */
+    var pressure = o.abs ? 100 : 90;
+    if (wet) pressure -= 5;
+    var bias = 52;
+    if (oval) bias = 48;
+    if (tkOval) bias -= 3;
+    if (dt === "FWD") bias += 1;
+    if (issue === "braking-instability" || issue === "oversteer-entry") bias += 2;
+    if (issue === "understeer") bias -= 1;
+    pressure = r0(clamp(pressure, 80, 100)); bias = r0(clamp(bias, 45, 58));
+    sections.push({
+      id: "brakes", title: "Brakes",
+      items: [
+        { k: "Pressure", v: pressure + "%", r: o.abs ? "ABS on — you can run full pressure without locking." : "ABS off — backed off to reduce lock-ups; trail gently." },
+        { k: "Bias", v: bias + "% front", r: bias > 51 ? "Front bias for shorter stops; ease back if the fronts lock." : "Rearward bias trades stopping power for entry stability." }
+      ],
+      note: tkHeavyBrake ? "Heavy braking zones here — if the fronts lock, drop pressure 2–3% and shift bias rearward." : undefined
+    });
+
+    /* ---------------- GEOMETRY (FM2023) ---------------- */
+    var arollF = 50, arollR = 50;
+    if (hispeed) { arollF += 5; arollR += 5; }
+    if (wet) { arollF -= 5; arollR -= 5; }
+    var antiDive = 50 + (issue === "braking-instability" || hispeed || tkHeavyBrake ? 5 : 0);
+    var antiSquat = dt === "FWD" ? 45 : 50;
+    if (issue === "wheelspin") antiSquat += 5;
+    var rcNote = grip || hispeed
+      ? "Lower the front roll centre a touch (≈ −5 to −10 mm from stock) to trim roll and sharpen response."
+      : (wet ? "Raise roll centres slightly toward stock for softer, more forgiving weight transfer." : "Leave near stock until springs and ARBs are dialled, then fine-tune balance here.");
+    sections.push({
+      id: "geo", title: "Suspension Geometry (FM2023)",
+      items: [
+        { k: "Anti-roll — front / rear", v: arollF + "% / " + arollR + "%", r: "Higher fights body roll geometrically; start at 50% and move in 5% steps." },
+        { k: "Anti-dive", v: antiDive + "%", r: "Higher keeps the nose flatter under braking." },
+        { k: "Anti-squat", v: antiSquat + "%", r: "Higher resists rear squat on power — helps put down torque." },
+        { k: "Roll centre", v: "see note", r: rcNote }
+      ],
+      note: "Geometry is a final-polish tool. Only available with Race suspension installed."
+    });
+
+    /* ---------------- AERO ---------------- */
+    var aeroF, aeroR;
+    if (oval || tkOval) { aeroF = "minimum"; aeroR = "low"; }
+    else if (tkFastCorners) { aeroF = "medium"; aeroR = "high"; }
+    else if (tkLongStraight) { aeroF = "low"; aeroR = "low–medium"; }
+    else if (hispeed) { aeroF = "low"; aeroR = "low–medium"; }
+    else if (grip || techy) { aeroF = "medium"; aeroR = "medium–high"; }
+    else if (drift) { aeroF = "low"; aeroR = "low"; }
+    else { aeroF = "low–medium"; aeroR = "medium"; }
+    sections.push({
+      id: "aero", title: "Aero",
+      items: [
+        { k: "Front downforce", v: aeroF, r: "More front = more turn-in bite but more drag." },
+        { k: "Rear downforce",  v: aeroR, r: "Keep rear ≥ front for high-speed stability." }
+      ],
+      note: "Only adjustable with aero parts fitted. Below A class the PI cost usually isn't worth it — skip unless the track is very fast."
+    });
+
+    /* ---------------- GEARING ---------------- */
+    var fdDir = (tkLongStraight || tkOval) ? "longer (more top speed)"
+      : (techy ? "shorter (more acceleration)"
+      : (hispeed || oval ? "longer (more top speed)" : "balanced"));
+    sections.push({
+      id: "gears", title: "Gearing",
+      items: [
+        { k: "Final drive", v: fdDir, r: "Tune it to the circuit's longest straight — you should just hit the limiter at its end." },
+        { k: "Individual ratios", v: "even spread", r: "Space the gears so the engine stays in its power band; check the max-speed-per-gear readout." }
+      ]
+    });
+
+    /* ---------------- TRACK FOCUS (first card when a track is chosen) ---------------- */
+    if (tk) {
+      var emphasis = [];
+      if (tkLongStraight || tkOval) emphasis.push("long gearing for top speed");
+      if (tkFastCorners) emphasis.push("more rear downforce and stability");
+      if (tkHeavyBrake) emphasis.push("braking stability (anti-dive, bias)");
+      if (tkBumpy) emphasis.push("softer, higher setup for compliance");
+      if (tkLowGrip || tkNarrow) emphasis.push("predictability over outright pace");
+      if (!emphasis.length) emphasis.push("a neutral, balanced setup");
+      var flagText = (tk.flags && tk.flags.length) ? tk.flags.join(", ") : "none";
+      sections.unshift({
+        id: "track", title: "Track — " + tk.venue + " · " + tk.layout,
+        items: [
+          { k: "Character", v: labelTech(tk.character), r: tk.note || "" },
+          { k: "Type", v: tk.type, r: tkOval ? "Oval: minimise drag, gear long, bias brakes rearward." : (tkTouge ? "Mountain road: agility, compliance and traction matter more than top speed." : "Road circuit.") },
+          { k: "Key traits", v: flagText, r: "These drove the adjustments below." },
+          { k: "Setup emphasis", v: emphasis.length + " focus" + (emphasis.length > 1 ? "es" : ""), r: emphasis.join("; ") + "." }
+        ]
+      });
+    }
+
+    /* ---------------- UPGRADE PLAN ---------------- */
+    var cap = CLASS_CAP[o.piClass] || 700;
+    var upg = buildUpgradePlan(car, o, dt);
+
+    /* ---------------- SUMMARY ---------------- */
+    var notes = [];
+    notes.push(dt + " · " + layout + "-engine · ~" + weight + " lb · " + fdist + "% front");
+    notes.push("Target: " + o.piClass + " class (cap " + cap + ") · " + o.tire + " tyres · " + labelGoal(o.goal));
+    notes.push(o.surface + " surface · " + labelTech(o.tech) + " · ABS " + (o.abs ? "on" : "off") + " · TC " + (o.tc ? "on" : "off"));
+    if (tk) notes.push("Track: " + tk.venue + " — " + tk.layout);
+    if (issue !== "none") notes.push("Correcting for: " + labelIssue(issue));
+
+    return {
+      summary: { car: car.name, piClass: o.piClass, cap: cap, floor: CLASS_FLOOR[o.piClass] || 600, notes: notes },
+      upgrades: upg,
+      sections: sections
+    };
+  }
+
+  function buildUpgradePlan(car, o, dt) {
+    var list = [];
+    var tire = o.tire;
+    list.push({ part: "Tyre compound → " + tire, why: "Highest grip-per-PI upgrade in the game. Fit before anything else." });
+    if (tire === "Race" || tire === "Sport") list.push({ part: "Tyre width (rear +1, front if needed)", why: "Wider rear = traction, wider front = turn-in. Watch the PI cost." });
+    list.push({ part: "Weight reduction (max affordable)", why: "PI-efficient: improves braking, accel and agility at once." });
+    if (o.goal === "drift" || o.goal === "grip" || o.goal === "time-attack") {
+      list.push({ part: "Race suspension", why: "Unlocks geometry: roll centre + anti-dive/squat/roll." });
+    } else {
+      list.push({ part: "Sport (or Race) suspension", why: "Sport unlocks the core sliders; Race adds full geometry." });
+    }
+    list.push({ part: "Race brakes", why: "Needed for brake-bias tuning." });
+    list.push({ part: "Race/Sport LSD", why: "Enables accel/decel lock tuning — big traction gains." });
+    if (o.goal === "drag" || o.goal === "drift") {
+      list.push({ part: "Drivetrain swap (car level 50)", why: dt === "AWD" ? "AWD launch for drag." : "RWD character for drift/drag." });
+    }
+    list.push({ part: "Power (fill remaining PI)", why: "Add intake/exhaust/cam last; only as much as the chassis can use. Turbo/supercharger is high PI." });
+    if (o.goal === "grip" || o.goal === "time-attack" || o.tech === "high-speed") {
+      list.push({ part: "Aero (front + rear)", why: "Worth it in A class and above, or on fast tracks." });
+    }
+    return list;
+  }
+
+  function labelGoal(g) {
+    return ({ grip: "grip / track", "time-attack": "time attack", drag: "drag", drift: "drift", oval: "oval / high-speed" })[g] || g;
+  }
+  function labelTech(t) {
+    return ({ technical: "technical (short bursts)", mixed: "mixed layout", "high-speed": "high-speed (long straights)" })[t] || t;
+  }
+  function labelIssue(i) {
+    return ({
+      understeer: "understeer on entry",
+      "oversteer-exit": "power oversteer on exit",
+      "oversteer-entry": "oversteer on entry",
+      "snap-oversteer": "snap / lift-off oversteer",
+      "braking-instability": "instability under braking",
+      wheelspin: "wheelspin out of corners",
+      "wont-rotate": "won't rotate at apex"
+    })[i] || i;
+  }
+
+  window.ForzaTune = { generateTune: generateTune, CLASS_FLOOR: CLASS_FLOOR, CLASS_CAP: CLASS_CAP };
+})();
+</script>
+<script>
+(function(){window.addEventListener('error',function(e){var o=document.getElementById('output');if(o&&!o.dataset.err){o.dataset.err='1';o.innerHTML='<div class=\'panel empty\'>A script error occurred<span>'+((e&&e.message)||'')+'</span></div>';}});})();
+</script>
+<script>
+(function(){
+  "use strict";
+  var $ = function(s){return document.querySelector(s);};
+  var cars = window.FORZA_CARS || [];
+  var tracks = window.FORZA_TRACKS || [];
+  var FLOOR = window.ForzaTune.CLASS_FLOOR, CAP = window.ForzaTune.CLASS_CAP;
+  var lastTune = null;
+  var selectedTrack = null;
+
+  // ---- populate track list (grouped by venue) ----
+  function fillTracks(){
+    var sel = $("#track");
+    var groups = {};
+    tracks.forEach(function(t, i){
+      (groups[t.venue] = groups[t.venue] || []).push(i);
+    });
+    Object.keys(groups).forEach(function(venue){
+      var og = document.createElement("optgroup"); og.label = venue;
+      groups[venue].forEach(function(i){
+        var o = document.createElement("option");
+        o.value = String(i); o.textContent = tracks[i].layout;
+        og.appendChild(o);
+      });
+      sel.appendChild(og);
+    });
+  }
+
+  // ---- populate car list ----
+  function fillCars(){
+    var dl = $("#carlist"); dl.innerHTML = "";
+    cars.forEach(function(c){
+      var o = document.createElement("option");
+      o.value = c.name;
+      if(c.division) o.label = c.division;
+      dl.appendChild(o);
+    });
+    updateRosterState();
+  }
+  function updateRosterState(){
+    $("#rosterState").textContent = "roster: " + cars.length + " cars";
+  }
+  function findCar(name){
+    return cars.find(function(c){return c.name.toLowerCase() === (name||"").toLowerCase();});
+  }
+
+  // ---- segmented toggles ----
+  function wireToggle(id){
+    var g = document.getElementById(id);
+    g.addEventListener("click", function(e){
+      var b = e.target.closest("button"); if(!b) return;
+      Array.prototype.forEach.call(g.querySelectorAll("button"), function(x){x.setAttribute("aria-pressed","false");});
+      b.setAttribute("aria-pressed","true");
+    });
+  }
+  ["layout","drivetrain","surface","tech"].forEach(wireToggle);
+  // assists = independent flags
+  $("#assists").addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    b.setAttribute("aria-pressed", b.getAttribute("aria-pressed")==="true" ? "false":"true");
+  });
+  function toggleVal(id){ return document.querySelector("#"+id+" button[aria-pressed=true]").dataset.val; }
+  function flag(name){ return $("#assists button[data-flag="+name+"]").getAttribute("aria-pressed")==="true"; }
+  function setToggle(id,val){
+    Array.prototype.forEach.call(document.querySelectorAll("#"+id+" button"), function(b){
+      b.setAttribute("aria-pressed", b.dataset.val===val ? "true":"false");
+    });
+  }
+
+  // ---- track selection drives the character toggle ----
+  $("#track").addEventListener("change", function(){
+    var v = this.value;
+    if(v === ""){ selectedTrack = null; return; }
+    selectedTrack = tracks[+v] || null;
+    if(selectedTrack) setToggle("tech", selectedTrack.character);
+  });
+
+  // ---- PI slider + rev bar ----
+  var SEGS = 22;
+  (function buildBar(){
+    var bar = $("#revbar");
+    for(var i=0;i<SEGS;i++){ var s=document.createElement("div"); s.className="seg"; bar.appendChild(s); }
+  })();
+  function syncClassRange(){
+    var cls = $("#piClass").value;
+    var lo = FLOOR[cls], hi = CAP[cls];
+    var slider = $("#piTarget");
+    slider.min = lo; slider.max = hi;
+    if(+slider.value < lo || +slider.value > hi) slider.value = Math.round(lo + (hi-lo)*0.75);
+    $("#revClass").textContent = cls;
+    $("#revCap").textContent = hi;
+    drawBar();
+  }
+  function drawBar(){
+    var cls = $("#piClass").value, lo = FLOOR[cls], hi = CAP[cls];
+    var t = +$("#piTarget").value;
+    $("#piTargetVal").textContent = t; $("#revPI").textContent = t;
+    var frac = (t - lo)/(hi - lo);
+    var lit = Math.round(frac * SEGS);
+    var segs = $("#revbar").children;
+    for(var i=0;i<SEGS;i++){
+      var s = segs[i]; s.className = "seg";
+      if(i < lit){
+        var p = i/SEGS;
+        s.classList.add(p < 0.6 ? "on-g" : p < 0.82 ? "on-a" : "on-r");
+      }
+    }
+  }
+  $("#piClass").addEventListener("change", syncClassRange);
+  $("#piTarget").addEventListener("input", drawBar);
+
+  // ---- when a known car is picked, auto-set layout/drivetrain/class ----
+  $("#car").addEventListener("change", function(){
+    var c = findCar(this.value); if(!c) return;
+    setToggle("layout", c.layout);
+    setToggle("drivetrain", c.dt);
+    if(CAP[c.cls]){ $("#piClass").value = c.cls; syncClassRange(); }
+  });
+
+  // ---- gather + generate ----
+  function gather(){
+    return {
+      piClass: $("#piClass").value,
+      piTarget: +$("#piTarget").value,
+      tire: $("#tire").value,
+      layout: toggleVal("layout"),
+      drivetrain: toggleVal("drivetrain"),
+      surface: toggleVal("surface"),
+      tech: toggleVal("tech"),
+      goal: $("#goal").value,
+      abs: flag("abs"),
+      tc: flag("tc"),
+      issue: $("#issue").value,
+      track: selectedTrack
+    };
+  }
+  function generate(){
+    var name = $("#car").value.trim();
+    var c = findCar(name);
+    if(!c){
+      // allow generating from toggles alone with a generic chassis
+      c = { name: name || "Custom chassis", dt: toggleVal("drivetrain"), layout: toggleVal("layout"),
+            weight: 3200, fdist: 52, cls: $("#piClass").value, pi: $("#piTarget").value };
+    }
+    var opts = gather();
+    lastTune = window.ForzaTune.generateTune(c, opts);
+    render(lastTune);
+    $("#outActions").hidden = false;
+  }
+  $("#generate").addEventListener("click", generate);
+
+  // ---- render ----
+  function esc(s){ return String(s).replace(/[&<>]/g, function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[m];}); }
+  function render(t){
+    var html = "";
+    // summary
+    html += '<div class="panel summary"><div class="car">'+esc(t.summary.car)+'</div><ul>';
+    t.summary.notes.forEach(function(n){ html += '<li>'+esc(n)+'</li>'; });
+    html += '</ul></div>';
+    html += '<div class="cards">';
+    // upgrade card
+    html += '<div class="panel card upgrade"><h3><span class="dot"></span>Upgrade priority</h3><div class="uplist">';
+    t.upgrades.forEach(function(u){
+      html += '<div class="upitem"><div><div class="p">'+esc(u.part)+'</div><div class="w">'+esc(u.why)+'</div></div></div>';
+    });
+    html += '</div></div>';
+    // setting cards
+    t.sections.forEach(function(sec){
+      html += '<div class="panel card"><h3><span class="dot"></span>'+esc(sec.title)+'</h3><div class="rows">';
+      sec.items.forEach(function(it){
+        html += '<div class="trow"><div class="kv"><span class="k">'+esc(it.k)+'</span><span class="v">'+esc(it.v)+'</span></div>';
+        if(it.r) html += '<div class="r">'+esc(it.r)+'</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+      if(sec.note) html += '<div class="foot">'+esc(sec.note)+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    $("#output").innerHTML = html;
+  }
+
+  // ---- export helpers ----
+  function toText(t){
+    var L = [];
+    L.push("APEX TUNE SHEET — "+t.summary.car);
+    t.summary.notes.forEach(function(n){L.push("  "+n);});
+    L.push("");
+    L.push("UPGRADE PRIORITY:");
+    t.upgrades.forEach(function(u,i){L.push("  "+(i+1)+". "+u.part);});
+    L.push("");
+    t.sections.forEach(function(s){
+      L.push(s.title.toUpperCase());
+      s.items.forEach(function(it){L.push("  "+it.k+": "+it.v);});
+      L.push("");
+    });
+    L.push("Baseline from FM2023 model — test and trim on track.");
+    return L.join("\n");
+  }
+  $("#copyBtn") && $("#copyBtn");
+  document.addEventListener("click", function(e){
+    if(e.target.id==="copyBtn" && lastTune){
+      navigator.clipboard.writeText(toText(lastTune)).then(function(){
+        e.target.textContent="Copied!"; setTimeout(function(){e.target.textContent="Copy sheet";},1400);
+      });
+    }
+    if(e.target.id==="jsonBtn" && lastTune){
+      var blob = new Blob([JSON.stringify(lastTune,null,2)],{type:"application/json"});
+      var a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+      a.download = "apex-tune.json"; a.click(); URL.revokeObjectURL(a.href);
+    }
+    if(e.target.id==="printBtn"){ window.print(); }
+  });
+
+  // ---- remote roster loader ----
+  $("#loadRoster").addEventListener("click", function(){
+    var url = $("#rosterUrl").value.trim(); if(!url) return;
+    var btn = this; btn.textContent = "…";
+    fetch(url).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function(data){
+        if(!Array.isArray(data) || !data.length) throw new Error("empty");
+        cars = data; fillCars();
+        btn.textContent = "Load";
+      })
+      .catch(function(err){
+        btn.textContent = "Load";
+        alert("Couldn't load roster: "+err.message+"\nCheck the URL is a raw JSON array and allows cross-origin requests.");
+      });
+  });
+
+  // ---- init ----
+  fillCars(); fillTracks(); syncClassRange();
+})();
+</script>
+</body>
+</html>

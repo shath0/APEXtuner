@@ -8,37 +8,45 @@ No build step, no framework, no npm. Just static files — open `index.html` or 
 
 ## Run it locally
 
-**Easiest:** double-click `index.html`. Everything works offline (car data and the engine load via `<script>` tags, not `fetch`).
-
-**If you prefer a local server** (needed only if you want to test the *remote roster loader*):
-
-```bash
-# from the project root
-python3 -m http.server 8000
-# then open http://localhost:8000
-```
+**`index.html` is fully self-contained** — all car data, track data and the tune engine are inlined into that one file. Just double-click it. No server, no external files, works offline.
 
 ---
 
 ## Deploy to GitHub Pages
 
-1. Create a repo and push these files (keep the folder structure).
-2. Repo **Settings → Pages → Build and deployment → Source: Deploy from a branch**.
-3. Branch: `main`, folder: `/root`. Save.
-4. Your app is live at `https://<you>.github.io/<repo>/` in a minute or two.
+Because `index.html` has no external dependencies, deployment can't break on missing folders, path case, or Jekyll:
 
-That's it — it's a fully static site.
+1. Create a repo and add **`index.html`** (that single file is enough). The included `.nojekyll` file is a belt-and-braces safeguard — add it too.
+2. Repo **Settings → Pages → Build and deployment → Source: Deploy from a branch**.
+3. Branch: `main`, folder: `/ (root)`. Save.
+4. Live at `https://<you>.github.io/<repo>/` within a minute or two.
+
+> If you previously deployed and the buttons did nothing, that was the separate `js/`/`data/` files failing to load. This single-file build fixes it — replace your old `index.html` with this one.
 
 ```
 forza-tune-generator/
-├── index.html          # UI + wiring (the "test environment")
+├── index.html          # ⭐ DEPLOY THIS — self-contained app (generated)
+├── .nojekyll           # disables Jekyll on GitHub Pages (safeguard)
+│
+│   # ---- editable sources (used to rebuild index.html) ----
+├── index.src.html      # UI template with external <script> tags
 ├── js/engine.js        # deterministic tune logic (pure functions)
 ├── data/cars.js        # full roster — all 681 cars (generated)
 ├── data/tracks.js      # 30 locations / 57 layouts with tuning attributes
 ├── data/roster_raw.txt # source list: name|division, one per line
 ├── build_roster.py     # regenerates cars.js from roster_raw.txt
+├── build_singlefile.py # inlines sources into the deployable index.html
 └── README.md
 ```
+
+### Editing then rebuilding
+Edit the sources (`data/cars.js`, `data/tracks.js`, `js/engine.js`, `index.src.html`), then regenerate the single file:
+
+```bash
+python3 build_singlefile.py   # reads index.src.html + sources -> writes index.html
+```
+
+You can also just edit `index.src.html` and use it directly if you serve the folder over a real web server (`python3 -m http.server 8000`); the single-file `index.html` is only needed to make static hosting foolproof.
 
 ---
 
