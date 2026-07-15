@@ -1,133 +1,74 @@
 # APEX — Forza Motorsport (2023) Tune Generator
 
-A zero-dependency, client-side tune generator for **Forza Motorsport (2023)**. Pick a car, set your PI class, tyres, drivetrain, engine layout, surface condition, track character and build goal, and it produces a full baseline setup sheet — tyres, alignment, ARBs, springs/ride/dampers, differential, brakes, FM2023 geometry, aero and gearing — each value with a one-line reason, plus a PI-ordered upgrade plan.
+A single self-contained web app that generates baseline tunes for **Forza Motorsport (2023)**. Pick a car, set your PI class, tyres, drivetrain, engine layout, surface, track and build goal, and it produces a full setup sheet — tyres, alignment, ARBs, springs/ride/dampers, differential, brakes, FM2023 geometry, aero and gearing — each value with a one-line reason, plus a PI-ordered upgrade plan.
 
-No build step, no framework, no npm. Just static files — open `index.html` or drop it on GitHub Pages.
-
----
-
-## Run it locally
-
-**`index.html` is fully self-contained** — all car data, track data and the tune engine are inlined into that one file. Just double-click it. No server, no external files, works offline.
+**Everything is in `index.html`.** No build step, no framework, no external files, no dependencies.
 
 ---
+
+## Run it
+
+Double-click **`index.html`**. That's it — it works offline.
 
 ## Deploy to GitHub Pages
 
-Because `index.html` has no external dependencies, deployment can't break on missing folders, path case, or Jekyll:
+1. Add **`index.html`** to a repo (that one file is the whole app).
+2. **Settings → Pages → Deploy from a branch → `main` / root**. Save.
+3. Live at `https://<you>.github.io/<repo>/` within a minute.
 
-1. Create a repo and add **`index.html`** (that single file is enough). The included `.nojekyll` file is a belt-and-braces safeguard — add it too.
-2. Repo **Settings → Pages → Build and deployment → Source: Deploy from a branch**.
-3. Branch: `main`, folder: `/ (root)`. Save.
-4. Live at `https://<you>.github.io/<repo>/` within a minute or two.
-
-> If you previously deployed and the buttons did nothing, that was the separate `js/`/`data/` files failing to load. This single-file build fixes it — replace your old `index.html` with this one.
-
-```
-forza-tune-generator/
-├── index.html          # ⭐ DEPLOY THIS — self-contained app (generated)
-├── .nojekyll           # disables Jekyll on GitHub Pages (safeguard)
-│
-│   # ---- editable sources (used to rebuild index.html) ----
-├── index.src.html      # UI template with external <script> tags
-├── js/engine.js        # deterministic tune logic (pure functions)
-├── data/cars.js        # full roster — all 681 cars (generated)
-├── data/tracks.js      # 30 locations / 57 layouts with tuning attributes
-├── data/roster_raw.txt # source list: name|division, one per line
-├── build_roster.py     # regenerates cars.js from roster_raw.txt
-├── build_singlefile.py # inlines sources into the deployable index.html
-└── README.md
-```
-
-### Editing then rebuilding
-Edit the sources (`data/cars.js`, `data/tracks.js`, `js/engine.js`, `index.src.html`), then regenerate the single file:
-
-```bash
-python3 build_singlefile.py   # reads index.src.html + sources -> writes index.html
-```
-
-You can also just edit `index.src.html` and use it directly if you serve the folder over a real web server (`python3 -m http.server 8000`); the single-file `index.html` is only needed to make static hosting foolproof.
+Because there are no external files, deployment can't break on missing folders, path case, or Jekyll. If you ever swap in a new version, hard-refresh (Ctrl/Cmd+Shift+R) to clear the cached copy.
 
 ---
 
-## How the tune engine works
+## What's inside
 
-`ForzaTune.generateTune(car, opts)` in `js/engine.js` is pure and deterministic. Scales used:
+- **All 681 cars** — the complete final roster, from the official list at https://forza.net/fmcars.
+- **30 track locations / 57 layouts** — every venue through the final content update (Fujimi Kaido, May 2025), each with tuning-relevant traits.
+- **The tune engine** — deterministic logic derived from the FM2023 physics/PI model.
 
-| Setting | Output form |
+All three are inlined as `<script>` blocks near the bottom of `index.html`.
+
+### Car stats panel
+Selecting a car shows a panel with year, make, division, drivetrain and engine layout.
+- **Name, division, make, year** are accurate (from / parsed from the official data).
+- **Drivetrain and layout** are auto-inferred and tagged **· auto** — override them with the toggles if a car is wrong.
+- **Stock PI, class and weight** aren't published in the official roster, so they show "—" by default. They appear automatically if you load an enriched roster (see below), and the engine uses `weight`/`fdist`/`cls`/`pi` when present.
+
+### How the track picker affects the tune
+Picking a track sets the character toggle and feeds the engine per-layout flags:
+
+| Flag | Effect |
 |---|---|
-| Tyre pressure, camber, toe, caster | absolute (psi / degrees) |
-| ARB | absolute, 1–65 |
-| Dampers (bump/rebound) | absolute, 1–20 |
-| Differential, brakes, geometry | absolute % |
-| **Springs & ride height** | **% of the car's slider range** (these are car-specific in FM2023, so a percentage travels correctly across cars) |
-
-Every heuristic is derived from the FM2023 physics/PI model — drivetrain, engine layout and weight distribution drive the ARB split, spring balance and diff defaults; surface, track character and build goal shift them; the optional "handling issue" selector layers a targeted correction on top. **In-game behaviour is always ground truth** — treat the output as a starting point and trim from there.
-
-To tweak the logic, edit `js/engine.js` — the sections are labelled and self-contained.
-
----
-
-## The track roster (30 locations)
-
-Picking a track gives much more precise tunes than the generic character toggle. `data/tracks.js` holds all **30 FM2023 locations** (24 real + 6 fictional, through the final Fujimi Kaido update, May 2025) across **57 layout configurations** — the main variations of each venue.
-
-Selecting a track:
-1. Sets the **track-character toggle** (technical / mixed / fast) automatically.
-2. Feeds the engine per-layout **flags** that shift the actual values, and adds a "Track focus" card summarising why.
-
-Each track carries a `type` (`circuit` / `oval` / `touge`) and `flags` the engine reacts to:
-
-| Flag | Effect on the tune |
-|---|---|
-| `long-straight` / `banking` | Longer final drive, less aero (top speed) |
-| `high-speed-corners` | More rear downforce, more caster (stability) |
+| `long-straight` / oval | Longer gearing, less aero |
+| `high-speed-corners` | More rear downforce, more caster |
 | `heavy-braking` | More anti-dive, braking-stability note |
-| `bumpy` / `elevation` / `kerbs` | Higher ride height, softer springs and bump damping |
-| `low-grip` / `narrow` | Slightly softer, lower diff lock — predictability |
-| `type: oval` | Minimal aero, long gearing, rearward brake bias |
-| `type: touge` | Compliance and agility over top speed |
+| `bumpy` / `elevation` / `kerbs` | Higher ride height, softer springs/bump |
+| `low-grip` / `narrow` | Softer, lower diff lock — predictability |
+| oval / touge | Minimal aero + long gearing / agility + compliance |
 
-`character` and `flags` are tuning heuristics based on each circuit's real layout, not telemetry — edit `data/tracks.js` freely to taste. The list covers the primary configurations; a few venues have extra in-game variations not listed. The `note` field can say anything; the flags are what actually move the numbers.
+### Value scales
+Springs and ride height are given as **% of each car's slider range** (car-specific); ARB (1–65), dampers (1–20), diff and brakes are absolute. In-game behaviour is always ground truth — treat every tune as a starting point and iterate.
 
-## The car roster (681 cars — complete)
+---
 
-`data/cars.js` contains the **complete FM2023 roster: all 681 cars**, generated from the official list at https://forza.net/fmcars. The game is no longer updated, so this list is final.
+## Editing the data
 
-**What's authoritative vs. inferred:**
-- **Name and division** come straight from the official source — accurate.
-- **Drivetrain (`dt`) and engine layout (`layout`) are auto-inferred** by `build_roster.py` using a documented rule set (e.g. quattro/STI/Evo/GT-R → AWD; hot hatches → FWD; 911/356/959 → rear; supercars → mid; everything else defaults to front/RWD). These are correct for the large majority but not every car. **The app's drivetrain and layout toggles override whatever's stored**, so any inferred miss is a one-tap fix when you pick the car.
-- **Weight, weight distribution and PI are not published in the source, so they're omitted.** The tune engine falls back to generic values (≈3200 lb, 50% front) when they're absent — drivetrain, layout, class, tyres, surface, track character and goal still drive the meaningful adjustments; only spring/ARB magnitudes are slightly generic.
+All data lives in the inline `<script>` blocks in `index.html`:
+- **`window.FORZA_CARS = [...]`** — the car roster. Fix a car's `dt`/`layout`, or add `weight`, `fdist`, `cls`, `pi` to any car and the stats panel + engine use them.
+- **`window.FORZA_TRACKS = [...]`** — tracks, with `character`, `type` and `flags`.
+- **`window.ForzaTune`** — the engine, if you want to change the tuning maths.
 
-### Regenerating or correcting the roster
-`build_roster.py` reads `data/roster_raw.txt` (one `name|division` per line) and writes `data/cars.js`:
-
-```bash
-python3 build_roster.py
-```
-
-To fix a specific car's drivetrain/layout, either edit `data/cars.js` directly or adjust the keyword rules in `build_roster.py` and re-run. To add weights/PI, give the car objects `weight`, `fdist`, `cls` and `pi` fields — the engine uses them automatically.
-
-### Enriching with weights/PI (optional)
-The official list doesn't include weight or PI. To add them, merge in a stats source and produce your own `cars.json`, then load it via the app's **"Replace roster"** box (must be a raw URL that allows cross-origin requests). Useful sources:
-
-- **ManteoMax's Forza spreadsheets** — per-car weight, drivetrain, PI and more: `https://www.manteomax.com/`
-- **kudosprime FM car list** — `https://www.kudosprime.com/fm/carlist.php`
-- **Forzurda/ForzaMotorsport2023CarIDs** — car names + in-game IDs: `https://github.com/Forzurda/ForzaMotorsport2023CarIDs`
-- **bluemanos/forza-motorsport-car-track-ordinal** — cars & tracks CSV/XML (see the `fm8` folder): `https://github.com/bluemanos/forza-motorsport-car-track-ordinal`
-
-**Schema per car:**
+Car schema (only `name` is required; everything else optional):
 ```json
-{ "name": "2015 SUBARU WRX STI", "division": "Modern Sport Compact",
-  "dt": "AWD", "layout": "front", "weight": 3391, "fdist": 59, "cls": "B", "pi": 660 }
+{ "name": "2015 SUBARU WRX STI", "make": "SUBARU", "year": 2015,
+  "division": "Modern Sport Compact", "dt": "AWD", "layout": "front",
+  "weight": 3391, "fdist": 59, "cls": "B", "pi": 660 }
 ```
 - `dt`: `RWD` | `AWD` | `FWD` · `layout`: `front` | `mid` | `rear`
-- `weight` (lb), `fdist` (front %), `cls`, `pi` are all optional.
+
+### Adding stock PI / weight in bulk
+The official list doesn't include PI or weight. To populate them, host a `cars.json` (a raw JSON array using the schema above) and paste its raw URL into the app's **"Replace roster"** box — the roster swaps in and the stats panel/engine light up. Community stats sources include ManteoMax's Forza spreadsheets (manteomax.com).
 
 ---
 
-## Notes
-
-- Uses Google Fonts (Barlow Condensed + JetBrains Mono) with system fallbacks, so it still looks fine offline.
-- No analytics, no tracking, no external calls except the fonts and the optional roster fetch you trigger.
-- Not affiliated with Turn 10 Studios or Microsoft. Forza Motorsport is their trademark.
+Not affiliated with Turn 10 Studios or Microsoft. Forza Motorsport is their trademark.

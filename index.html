@@ -57,6 +57,32 @@ select,input[type=text]{width:100%;background:var(--panel-2);border:1px solid va
   font-family:var(--mono);font-size:13px;padding:9px 10px;border-radius:5px;appearance:none}
 select:focus,input:focus{outline:2px solid var(--amber);outline-offset:1px;border-color:var(--amber)}
 input[type=range]{width:100%;accent-color:var(--amber)}
+
+/* searchable car combobox */
+.combo{position:relative}
+.combo-list{position:absolute;z-index:20;left:0;right:0;top:calc(100% + 4px);margin:0;padding:4px;
+  list-style:none;max-height:300px;overflow-y:auto;background:var(--panel-2);
+  border:1px solid var(--amber);border-radius:6px;box-shadow:0 12px 28px rgba(0,0,0,.55)}
+.combo-item{padding:8px 10px;border-radius:5px;cursor:pointer;display:flex;flex-direction:column;gap:1px}
+.combo-item .cname{font-family:var(--sans);font-size:13.5px;color:var(--ink);line-height:1.2}
+.combo-item .cdiv{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-dim)}
+.combo-item.active,.combo-item:hover{background:var(--amber)}
+.combo-item.active .cname,.combo-item:hover .cname{color:#1a1204;font-weight:600}
+.combo-item.active .cdiv,.combo-item:hover .cdiv{color:#5a4008}
+.combo-item mark{background:transparent;color:var(--amber);font-weight:700}
+.combo-item.active mark,.combo-item:hover mark{color:#1a1204;text-decoration:underline}
+.combo-empty{padding:10px;font-family:var(--sans);font-size:12px;color:var(--ink-dim)}
+.combo-more{padding:8px 10px;font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-dim);border-top:1px solid var(--line);margin-top:2px}
+
+/* car stats panel */
+.carstats{margin-top:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.cs-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px}
+.cs-item{display:flex;justify-content:space-between;gap:8px;align-items:baseline;border-bottom:1px dashed var(--line);padding-bottom:4px}
+.cs-item.cs-wide{grid-column:1 / -1}
+.cs-k{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim)}
+.cs-v{font-family:var(--mono);font-size:12px;color:var(--amber);font-weight:700;text-align:right}
+.cs-v .auto{color:var(--ink-dim);font-weight:400;font-size:10px}
+.cs-note{font-family:var(--sans);font-size:10.5px;color:var(--ink-dim);margin-top:8px;line-height:1.45}
 .range-val{font-family:var(--mono);font-size:12px;color:var(--amber);float:right}
 
 /* segmented toggles */
@@ -159,8 +185,24 @@ footer p{font-family:var(--sans);font-size:11.5px;color:var(--ink-dim);line-heig
 
       <div class="field">
         <label for="car">Car</label>
-        <input list="carlist" id="car" placeholder="Type to search…" autocomplete="off" />
-        <datalist id="carlist"></datalist>
+        <div class="combo" id="carCombo">
+          <input type="text" id="car" placeholder="Type to search 681 cars…" autocomplete="off"
+                 role="combobox" aria-expanded="false" aria-controls="carList" aria-autocomplete="list" spellcheck="false" />
+          <ul id="carList" class="combo-list" role="listbox" hidden></ul>
+        </div>
+        <div class="carstats" id="carStats" hidden>
+          <div class="cs-grid">
+            <div class="cs-item"><span class="cs-k">Year</span><span class="cs-v" id="csYear">—</span></div>
+            <div class="cs-item"><span class="cs-k">Make</span><span class="cs-v" id="csMake">—</span></div>
+            <div class="cs-item cs-wide"><span class="cs-k">Division</span><span class="cs-v" id="csDiv">—</span></div>
+            <div class="cs-item"><span class="cs-k">Drivetrain</span><span class="cs-v" id="csDt">—</span></div>
+            <div class="cs-item"><span class="cs-k">Layout</span><span class="cs-v" id="csLayout">—</span></div>
+            <div class="cs-item"><span class="cs-k">Stock PI</span><span class="cs-v" id="csPi">—</span></div>
+            <div class="cs-item"><span class="cs-k">Class</span><span class="cs-v" id="csCls">—</span></div>
+            <div class="cs-item cs-wide"><span class="cs-k">Weight</span><span class="cs-v" id="csWeight">—</span></div>
+          </div>
+          <div class="cs-note" id="csNote"></div>
+        </div>
       </div>
 
       <div class="field">
@@ -297,4094 +339,5458 @@ footer p{font-family:var(--sans);font-size:11.5px;color:var(--ink-dim);line-heig
 /*
  * Forza Motorsport (2023) — FULL ROSTER (681 cars)
  * Source: official list at https://forza.net/fmcars (name + division are authoritative).
- * dt (drivetrain) and layout (engine position) are AUTO-INFERRED heuristics —
- * treat them as editable defaults. The app's drivetrain/layout toggles override
- * them per build. Weight / weight-distribution / PI are not in the source and are
- * omitted; the tune engine falls back to generic values when they're absent.
+ * make + year are parsed from the name. dt (drivetrain) and layout (engine
+ * position) are AUTO-INFERRED heuristics — treat them as editable defaults;
+ * the app's toggles override them per build.
+ * OPTIONAL per-car stats the app will display and use if present: weight (lb),
+ * fdist (front weight %), cls (class letter), pi (stock PI). They aren't in the
+ * official source, so they're omitted here; add them via an enriched roster.
  */
 window.FORZA_CARS = [
 {
 "name": "2017 Abarth 124 Spider",
+"make": "Abarth",
+"year": 2017,
 "division": "Modern Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2022 Acura NSX Type S",
+"make": "Acura",
+"year": 2022,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2020 Acura #6 ARX-05 DPi",
+"make": "Acura",
+"year": 2020,
 "division": "Forza Proto-H",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2018 Acura #36 NSX GT3",
+"make": "Acura",
+"year": 2018,
 "division": "Forza GT3",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2017 Acura NSX",
+"make": "Acura",
+"year": 2017,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2001 Acura Integra Type R",
+"make": "Acura",
+"year": 2001,
 "division": "Early Sport Compact",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2017 Alfa Romeo Giulia Quadrifoglio",
+"make": "Alfa Romeo",
+"year": 2017,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2014 Alfa Romeo 4C",
+"make": "Alfa Romeo",
+"year": 2014,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2011 Alfa Romeo Giulietta Quadrifoglio Verde",
+"make": "Alfa Romeo",
+"year": 2011,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1965 Alfa Romeo Giulia Sprint GTA Stradale",
+"make": "Alfa Romeo",
+"year": 1965,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Alpine A110",
+"make": "Alpine",
+"year": 2017,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1990 Alpine GTA Le Mans",
+"make": "Alpine",
+"year": 1990,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1971 AMC Javelin AMX",
+"make": "AMC",
+"year": 1971,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1970 AMC Rebel The Machine",
+"make": "AMC",
+"year": 1970,
 "division": "Street Drag Racers",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Apollo Intensa Emozione",
+"make": "Apollo",
+"year": 2018,
 "division": "Modern Hypercars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2013 Ariel Atom 500 V8",
+"make": "Ariel",
+"year": 2013,
 "division": "Track Toys",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2023 Aston Martin Valkyrie",
+"make": "Aston Martin",
+"year": 2023,
 "division": "Modern Hypercars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2022 Aston Martin Valkyrie AMR Pro",
+"make": "Aston Martin",
+"year": 2022,
 "division": "Modern Factory Racecars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2019 Aston Martin Valhalla Concept Car",
+"make": "Aston Martin",
+"year": 2019,
 "division": "Modern Hypercars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2019 Aston Martin DBS Superleggera",
+"make": "Aston Martin",
+"year": 2019,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2019 Aston Martin Vantage",
+"make": "Aston Martin",
+"year": 2019,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Aston Martin #97 AMR Vantage GTE",
+"make": "Aston Martin",
+"year": 2018,
 "division": "Forza GT2",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Aston Martin Vulcan AMR Pro",
+"make": "Aston Martin",
+"year": 2017,
 "division": "Modern Factory Racecars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Aston Martin #7 Aston Martin Racing V12 Vantage GT3",
+"make": "Aston Martin",
+"year": 2017,
 "division": "Forza GT3",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Aston Martin Vanquish Zagato Coupe",
+"make": "Aston Martin",
+"year": 2017,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2016 Aston Martin Vulcan",
+"make": "Aston Martin",
+"year": 2016,
 "division": "Modern Factory Racecars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Aston Martin Vantage GT12",
+"make": "Aston Martin",
+"year": 2015,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2013 Aston Martin V12 Vantage S",
+"make": "Aston Martin",
+"year": 2013,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2008 Aston Martin DBS",
+"make": "Aston Martin",
+"year": 2008,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2001 Aston Martin V12 Vanquish",
+"make": "Aston Martin",
+"year": 2001,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1998 Aston Martin V8 Vantage V600",
+"make": "Aston Martin",
+"year": 1998,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1989 Aston Martin #18 Aston Martin AMR1",
+"make": "Aston Martin",
+"year": 1989,
 "division": "GTP/C",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1967 Aston Martin DBS",
+"make": "Aston Martin",
+"year": 1967,
 "division": "Vintage Exotic GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1964 Aston Martin DB5",
+"make": "Aston Martin",
+"year": 1964,
 "division": "Sport Coupe Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1960 Aston Martin DB4 GT Zagato",
+"make": "Aston Martin",
+"year": 1960,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1958 Aston Martin DBR1",
+"make": "Aston Martin",
+"year": 1958,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2021 Audi RS e-tron GT",
+"make": "Audi",
+"year": 2021,
 "division": "Sport Luxury",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2021 Audi RS 6 Avant",
+"make": "Audi",
+"year": 2021,
 "division": "Sport Luxury",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2021 Audi RS 7 Sportback",
+"make": "Audi",
+"year": 2021,
 "division": "Sport Luxury",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2020 Audi R8 V10 performance",
+"make": "Audi",
+"year": 2020,
 "division": "Modern Sport GT",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2020 Audi TT RS Coupe",
+"make": "Audi",
+"year": 2020,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2020 Audi RS 3 Sedan",
+"make": "Audi",
+"year": 2020,
 "division": "Modern Sport Coupe",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2018 Audi #44 R8 LMS GT3",
+"make": "Audi",
+"year": 2018,
 "division": "Forza GT3",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Audi #1 Audi Sport RS 3 LMS",
+"make": "Audi",
+"year": 2018,
 "division": "Forza Touring Cars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Audi TT RS",
+"make": "Audi",
+"year": 2018,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Audi RS 5 Coupe",
+"make": "Audi",
+"year": 2018,
 "division": "Modern Sport Touring",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2018 Audi RS 4 Avant",
+"make": "Audi",
+"year": 2018,
 "division": "Modern Sport Touring",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2016 Audi #17 Rotek Racing TT RS",
+"make": "Audi",
+"year": 2016,
 "division": "Forza GT4",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2016 Audi R8 V10 plus",
+"make": "Audi",
+"year": 2016,
 "division": "Modern Sport GT",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2015 Audi RS 6 Avant",
+"make": "Audi",
+"year": 2015,
 "division": "Sport Luxury",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2015 Audi S1",
+"make": "Audi",
+"year": 2015,
 "division": "Modern Hot Hatch",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2014 Audi #2 Audi Team Joest R18 e-tron quattro",
+"make": "Audi",
+"year": 2014,
 "division": "Forza P1",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2013 Audi R8 Coupé V10 plus 5.2 FSI quattro",
+"make": "Audi",
+"year": 2013,
 "division": "Modern Sport GT",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2013 Audi RS 7 Sportback",
+"make": "Audi",
+"year": 2013,
 "division": "Sport Luxury",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2013 Audi RS 4 Avant",
+"make": "Audi",
+"year": 2013,
 "division": "Modern Sport Touring",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2011 Audi RS 3 Sportback",
+"make": "Audi",
+"year": 2011,
 "division": "Modern Hot Hatch",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2010 Audi R8 Coupé 5.2 FSI quattro",
+"make": "Audi",
+"year": 2010,
 "division": "Modern Sport GT",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2006 Audi RS 4",
+"make": "Audi",
+"year": 2006,
 "division": "Sport Touring Classics",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2004 Audi S4",
+"make": "Audi",
+"year": 2004,
 "division": "Sport Touring Classics",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2003 Audi RS 6",
+"make": "Audi",
+"year": 2003,
 "division": "Sport Touring Classics",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2001 Audi RS 4 Avant",
+"make": "Audi",
+"year": 2001,
 "division": "Sport Touring Classics",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1995 Audi Avant RS 2",
+"make": "Audi",
+"year": 1995,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1989 Audi #4 Audi 90 quattro IMSA GTO",
+"make": "Audi",
+"year": 1989,
 "division": "GTX Sportscars",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1984 Audi Sport quattro",
+"make": "Audi",
+"year": 1984,
 "division": "Sport Touring Classics",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1965 Austin-Healey 3000 MkIII",
+"make": "Austin-Healey",
+"year": 1965,
 "division": "Sport Coupe Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1939 Auto Union Type D",
+"make": "Auto Union",
+"year": 1939,
 "division": "The Birth of Grand Prix",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2020 Automobili Pininfarina Battista",
+"make": "Automobili Pininfarina",
+"year": 2020,
 "division": "Modern Hypercars",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2014 BAC Mono",
+"make": "BAC",
+"year": 2014,
 "division": "Track Toys",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2017 Bentley Continental Supersports",
+"make": "Bentley",
+"year": 2017,
 "division": "Sport Luxury",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2014 Bentley #17 M-Sport Bentley Continental GT3",
+"make": "Bentley",
+"year": 2014,
 "division": "Forza GT3",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2003 Bentley #7 Team Bentley Speed 8",
+"make": "Bentley",
+"year": 2003,
 "division": "Early LMP",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2023 BMW #25 BMW Team RLL M Hybrid V8",
+"make": "BMW",
+"year": 2023,
 "division": "Forza Proto-H",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2023 BMW #96 Turner Motorsports M4 GT3",
+"make": "BMW",
+"year": 2023,
 "division": "Forza GT3",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2023 BMW M2",
+"make": "BMW",
+"year": 2023,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2021 BMW M3 Competition Sedan",
+"make": "BMW",
+"year": 2021,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2021 BMW M4 Competition Coupé",
+"make": "BMW",
+"year": 2021,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2020 BMW M8 Competition Coupé",
+"make": "BMW",
+"year": 2020,
 "division": "Sport Luxury",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2020 BMW M2 Competition Coupé",
+"make": "BMW",
+"year": 2020,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2019 BMW Z4 Roadster",
+"make": "BMW",
+"year": 2019,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 BMW #1 BMW M Motorsport M8 GTE",
+"make": "BMW",
+"year": 2018,
 "division": "Forza GT2",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 BMW M5",
+"make": "BMW",
+"year": 2018,
 "division": "Sport Luxury",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 BMW #24 BMW Team RLL M6 GTLM",
+"make": "BMW",
+"year": 2017,
 "division": "Forza GT2",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2016 BMW M4 GTS",
+"make": "BMW",
+"year": 2016,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 BMW i8",
+"make": "BMW",
+"year": 2015,
 "division": "Sport Luxury",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2014 BMW M4 Coupé",
+"make": "BMW",
+"year": 2014,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2013 BMW M6 Coupé",
+"make": "BMW",
+"year": 2013,
 "division": "Sport Luxury",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2012 BMW M5",
+"make": "BMW",
+"year": 2012,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2011 BMW 1 Series M Coupé",
+"make": "BMW",
+"year": 2011,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2010 BMW M3 GTS",
+"make": "BMW",
+"year": 2010,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2010 BMW M6 Coupé",
+"make": "BMW",
+"year": 2010,
 "division": "Sport Luxury",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2009 BMW M5",
+"make": "BMW",
+"year": 2009,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2008 BMW M3",
+"make": "BMW",
+"year": 2008,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2005 BMW M3",
+"make": "BMW",
+"year": 2005,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2003 BMW M5",
+"make": "BMW",
+"year": 2003,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2002 BMW M3-GTR",
+"make": "BMW",
+"year": 2002,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2002 BMW Z3 M Coupé",
+"make": "BMW",
+"year": 2002,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2000 BMW 323ti Sport",
+"make": "BMW",
+"year": 2000,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1999 BMW #16 BMW Motorsport V12 LMR",
+"make": "BMW",
+"year": 1999,
 "division": "Early LMP",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1999 BMW #15 BMW Motorsport V12 LMR",
+"make": "BMW",
+"year": 1999,
 "division": "Early LMP",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1997 BMW M3",
+"make": "BMW",
+"year": 1997,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1995 BMW 850CSi",
+"make": "BMW",
+"year": 1995,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1991 BMW M3",
+"make": "BMW",
+"year": 1991,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1988 BMW M5",
+"make": "BMW",
+"year": 1988,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1986 BMW M635 CSi",
+"make": "BMW",
+"year": 1986,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1981 BMW M1",
+"make": "BMW",
+"year": 1981,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1979 BMW #6 BMW Motorsport M1 Procar",
+"make": "BMW",
+"year": 1979,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1976 BMW #1 BMW 3.0 CSL",
+"make": "BMW",
+"year": 1976,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1975 BMW #25 BMW Motorsport 3.0 CSL",
+"make": "BMW",
+"year": 1975,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1973 BMW 2002 Turbo",
+"make": "BMW",
+"year": 1973,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2019 Brabham BT62",
+"make": "Brabham",
+"year": 2019,
 "division": "Modern Factory Racecars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1967 Brabham BT24",
+"make": "Brabham",
+"year": 1967,
 "division": "Formula 60s",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1964 Brabham BT8",
+"make": "Brabham",
+"year": 1964,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1974 BRM #14 Team Motul P201",
+"make": "BRM",
+"year": 1974,
 "division": "Formula 70s",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2019 Bugatti Divo",
+"make": "Bugatti",
+"year": 2019,
 "division": "Modern Hypercars",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2018 Bugatti Chiron",
+"make": "Bugatti",
+"year": 2018,
 "division": "Modern Hypercars",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2011 Bugatti Veyron Super Sport",
+"make": "Bugatti",
+"year": 2011,
 "division": "Modern Hypercars",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "1992 Bugatti EB110 Super Sport",
+"make": "Bugatti",
+"year": 1992,
 "division": "Exotic GT Classics",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "1926 Bugatti Type 35 C",
+"make": "Bugatti",
+"year": 1926,
 "division": "The Birth of Grand Prix",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1987 Buick Regal GNX",
+"make": "Buick",
+"year": 1987,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1985 Buick #6 Performance Motorsports Somerset Regal Trans-Am",
+"make": "Buick",
+"year": 1985,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1970 Buick GSX",
+"make": "Buick",
+"year": 1970,
 "division": "Street Drag Racers",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2023 Cadillac #31 Whelen Engineering Cadillac Racing V-Series.R",
+"make": "Cadillac",
+"year": 2023,
 "division": "Forza Proto-H",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2023 Cadillac #2 Cadillac Racing V-Series.R",
+"make": "Cadillac",
+"year": 2023,
 "division": "Forza Proto-H",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2023 Cadillac #01 Cadillac Racing V-Series.R",
+"make": "Cadillac",
+"year": 2023,
 "division": "Forza Proto-H",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2022 Cadillac CT5-V Blackwing",
+"make": "Cadillac",
+"year": 2022,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2022 Cadillac CT4-V Blackwing",
+"make": "Cadillac",
+"year": 2022,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2021 Cadillac #31 Whelen Racing DPi-V.R",
+"make": "Cadillac",
+"year": 2021,
 "division": "Forza Proto-H",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2018 Cadillac #57 TA CTS-V",
+"make": "Cadillac",
+"year": 2018,
 "division": "Forza T/A",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2016 Cadillac CTS-V Sedan",
+"make": "Cadillac",
+"year": 2016,
 "division": "Sport Luxury",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2016 Cadillac ATS-V",
+"make": "Cadillac",
+"year": 2016,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Cadillac #3 Cadillac Racing ATS-V.R",
+"make": "Cadillac",
+"year": 2015,
 "division": "Forza GT3",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2014 Cadillac CTS-V Sport Wagon",
+"make": "Cadillac",
+"year": 2014,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2013 Caterham Superlight R500",
+"make": "Caterham",
+"year": 2013,
 "division": "Track Toys",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1966 Chaparral #66 Chaparral Cars 2E",
+"make": "Chaparral",
+"year": 1966,
 "division": "Prototype Group Racing",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2025 Chevrolet IndyCar",
+"make": "Chevrolet",
+"year": 2025,
 "division": "IndyCar",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2024 Chevrolet NASCAR Next Gen Camaro ZL1",
+"make": "Chevrolet",
+"year": 2024,
 "division": "NASCAR",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2024 Chevrolet Corvette E-Ray",
+"make": "Chevrolet",
+"year": 2024,
 "division": "Modern Sport GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2023 Chevrolet Corvette Z06",
+"make": "Chevrolet",
+"year": 2023,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2020 Chevrolet #3 Corvette Racing C8.R",
+"make": "Chevrolet",
+"year": 2020,
 "division": "Forza GT2",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2020 Chevrolet Corvette Stingray Coupe Forza Edition",
+"make": "Chevrolet",
+"year": 2020,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2020 Chevrolet Corvette Stingray Coupe",
+"make": "Chevrolet",
+"year": 2020,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2019 Chevrolet Corvette ZR1",
+"make": "Chevrolet",
+"year": 2019,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Chevrolet #23 Ruman Racing TA Corvette",
+"make": "Chevrolet",
+"year": 2018,
 "division": "Forza T/A",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Chevrolet Camaro ZL1 1LE Forza Edition",
+"make": "Chevrolet",
+"year": 2018,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Chevrolet Camaro ZL1 1LE",
+"make": "Chevrolet",
+"year": 2018,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Chevrolet Camaro ZL1",
+"make": "Chevrolet",
+"year": 2017,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2016 Chevrolet Camaro Super Sport",
+"make": "Chevrolet",
+"year": 2016,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Chevrolet #10 Konica Minolta Corvette Daytona Prototype",
+"make": "Chevrolet",
+"year": 2015,
 "division": "Forza P2",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Chevrolet Corvette Z06",
+"make": "Chevrolet",
+"year": 2015,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2014 Chevrolet #3 Corvette Racing Corvette C7.R",
+"make": "Chevrolet",
+"year": 2014,
 "division": "Forza GT2",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2010 Chevrolet #55 Level 5 Motorsports Oreca FLM09",
+"make": "Chevrolet",
+"year": 2010,
 "division": "Forza P2",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2009 Chevrolet Corvette ZR1",
+"make": "Chevrolet",
+"year": 2009,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2002 Chevrolet Corvette Z06",
+"make": "Chevrolet",
+"year": 2002,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2002 Chevrolet Camaro 35th Anniversary Super Sport",
+"make": "Chevrolet",
+"year": 2002,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1995 Chevrolet Corvette ZR-1",
+"make": "Chevrolet",
+"year": 1995,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1990 Chevrolet Camaro IROC-Z",
+"make": "Chevrolet",
+"year": 1990,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1988 Chevrolet Monte Carlo Super Sport",
+"make": "Chevrolet",
+"year": 1988,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1988 Chevrolet #77 Beretta Trans Am",
+"make": "Chevrolet",
+"year": 1988,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1976 Chevrolet #76 Greenwood Corvette",
+"make": "Chevrolet",
+"year": 1976,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1970 Chevrolet Corvette ZR-1",
+"make": "Chevrolet",
+"year": 1970,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1970 Chevrolet Chevelle Super Sport 454",
+"make": "Chevrolet",
+"year": 1970,
 "division": "Street Drag Racers",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1970 Chevrolet Camaro Z28",
+"make": "Chevrolet",
+"year": 1970,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1969 Chevrolet Nova Super Sport 396",
+"make": "Chevrolet",
+"year": 1969,
 "division": "Street Drag Racers",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1969 Chevrolet Camaro Jordan Luka 3 Motorsport Edition",
+"make": "Chevrolet",
+"year": 1969,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1969 Chevrolet Camaro Super Sport Coupe",
+"make": "Chevrolet",
+"year": 1969,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1967 Chevrolet Corvette Stingray 427",
+"make": "Chevrolet",
+"year": 1967,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1964 Chevron B16",
+"make": "Chevron",
+"year": 1964,
 "division": "Vintage Le Mans Prototypes",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1972 Chrysler VH Valiant Charger R/T E49",
+"make": "Chrysler",
+"year": 1972,
 "division": "Street Drag Racers",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2011 Citroën DS 3 Racing",
+"make": "Citroën",
+"year": 2011,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1979 Datsun #33 280ZX Turbo",
+"make": "Datsun",
+"year": 1979,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1970 Datsun 510",
+"make": "Datsun",
+"year": 1970,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1969 Datsun 2000 Roadster",
+"make": "Datsun",
+"year": 1969,
 "division": "Sport Coupe Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1984 De Tomaso Pantera GT5",
+"make": "De Tomaso",
+"year": 1984,
 "division": "Vintage Exotic GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2019 Dodge #9 American V8 Road Racing TA Challenger",
+"make": "Dodge",
+"year": 2019,
 "division": "Forza T/A",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Dodge Challenger SRT Demon",
+"make": "Dodge",
+"year": 2018,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2016 Dodge Viper ACR",
+"make": "Dodge",
+"year": 2016,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Dodge Charger SRT Hellcat",
+"make": "Dodge",
+"year": 2015,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2014 Dodge #93 SRT Motorsports Viper GTS-R",
+"make": "Dodge",
+"year": 2014,
 "division": "Forza GT2",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2013 Dodge Dart GT",
+"make": "Dodge",
+"year": 2013,
 "division": "Modern Sport Compact",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2012 Dodge Challenger SRT8",
+"make": "Dodge",
+"year": 2012,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2008 Dodge Viper SRT10 ACR",
+"make": "Dodge",
+"year": 2008,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2005 Dodge SRT-4 ACR",
+"make": "Dodge",
+"year": 2005,
 "division": "Early Sport Compact",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1999 Dodge Viper GTS ACR",
+"make": "Dodge",
+"year": 1999,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1996 Dodge Stealth R/T Turbo",
+"make": "Dodge",
+"year": 1996,
 "division": "Early Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1986 Dodge Shelby Omni GLHS",
+"make": "Dodge",
+"year": 1986,
 "division": "Hot Hatch Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1970 Dodge Coronet Super Bee",
+"make": "Dodge",
+"year": 1970,
 "division": "Street Drag Racers",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1970 Dodge Challenger R/T",
+"make": "Dodge",
+"year": 1970,
 "division": "Street Drag Racers",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1969 Dodge Charger Daytona HEMI",
+"make": "Dodge",
+"year": 1969,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1969 Dodge Charger R/T",
+"make": "Dodge",
+"year": 1969,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2013 Donkervoort D8 GTO",
+"make": "Donkervoort",
+"year": 2013,
 "division": "Track Toys",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1998 Eagle Talon TSi Turbo",
+"make": "Eagle",
+"year": 1998,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1967 Eagle-Weslake T1G",
+"make": "Eagle-Weslake",
+"year": 1967,
 "division": "Formula 60s",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2019 Elemental RP1",
+"make": "Elemental",
+"year": 2019,
 "division": "Track Toys",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2018 Exomotive Exocet Sport V8 XP-5",
+"make": "Exomotive",
+"year": 2018,
 "division": "Track Toys",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2022 Ferrari 296 GTB",
+"make": "Ferrari",
+"year": 2022,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2020 Ferrari SF90 Stradale",
+"make": "Ferrari",
+"year": 2020,
 "division": "Modern Exotic GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2020 Ferrari Roma",
+"make": "Ferrari",
+"year": 2020,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2019 Ferrari #62 Risi Competizione 488 GTE",
+"make": "Ferrari",
+"year": 2019,
 "division": "Forza GT2",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2019 Ferrari 488 Pista",
+"make": "Ferrari",
+"year": 2019,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2019 Ferrari F8 Tributo",
+"make": "Ferrari",
+"year": 2019,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2019 Ferrari Monza SP2",
+"make": "Ferrari",
+"year": 2019,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Ferrari FXX-K Evo",
+"make": "Ferrari",
+"year": 2018,
 "division": "Modern Factory Racecars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2018 Ferrari Portofino",
+"make": "Ferrari",
+"year": 2018,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Ferrari #25 Corse Clienti 488 Challenge",
+"make": "Ferrari",
+"year": 2017,
 "division": "488 Challenge Spec",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2017 Ferrari 812 Superfast",
+"make": "Ferrari",
+"year": 2017,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Ferrari J50",
+"make": "Ferrari",
+"year": 2017,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Ferrari F12tdf",
+"make": "Ferrari",
+"year": 2015,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Ferrari 488 GTB",
+"make": "Ferrari",
+"year": 2015,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2014 Ferrari FXX K",
+"make": "Ferrari",
+"year": 2014,
 "division": "Modern Factory Racecars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2014 Ferrari California T",
+"make": "Ferrari",
+"year": 2014,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2013 Ferrari LaFerrari",
+"make": "Ferrari",
+"year": 2013,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2013 Ferrari 458 Speciale",
+"make": "Ferrari",
+"year": 2013,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2012 Ferrari 599XX Evolution",
+"make": "Ferrari",
+"year": 2012,
 "division": "Modern Factory Racecars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2011 Ferrari #62 Risi Competizione F458 Italia GTC",
+"make": "Ferrari",
+"year": 2011,
 "division": "Forza GT3",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2010 Ferrari 599XX",
+"make": "Ferrari",
+"year": 2010,
 "division": "Modern Factory Racecars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2009 Ferrari 458 Italia",
+"make": "Ferrari",
+"year": 2009,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2007 Ferrari 430 Scuderia",
+"make": "Ferrari",
+"year": 2007,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2003 Ferrari 360 Challenge Stradale",
+"make": "Ferrari",
+"year": 2003,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2002 Ferrari Enzo Ferrari",
+"make": "Ferrari",
+"year": 2002,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2002 Ferrari 575M Maranello",
+"make": "Ferrari",
+"year": 2002,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1998 Ferrari #12 Risi Competizione F333 SP",
+"make": "Ferrari",
+"year": 1998,
 "division": "Early LMP",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1996 Ferrari F50 GT",
+"make": "Ferrari",
+"year": 1996,
 "division": "Early Factory Racecars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1995 Ferrari F50",
+"make": "Ferrari",
+"year": 1995,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1994 Ferrari F355 Berlinetta",
+"make": "Ferrari",
+"year": 1994,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1992 Ferrari 512 TR",
+"make": "Ferrari",
+"year": 1992,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1990 Ferrari #1 Scuderia Ferrari 641",
+"make": "Ferrari",
+"year": 1990,
 "division": "Grand Prix Rivals",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1989 Ferrari F40 Competizione",
+"make": "Ferrari",
+"year": 1989,
 "division": "Early Factory Racecars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1987 Ferrari F40",
+"make": "Ferrari",
+"year": 1987,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1984 Ferrari 288 GTO",
+"make": "Ferrari",
+"year": 1984,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1982 Ferrari #72 N.A.R.T. 512 BB/LM",
+"make": "Ferrari",
+"year": 1982,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1976 Ferrari #1 Scuderia Ferrari 312 T2",
+"make": "Ferrari",
+"year": 1976,
 "division": "Formula 70s",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1970 Ferrari 512 S",
+"make": "Ferrari",
+"year": 1970,
 "division": "Vintage Le Mans Prototypes",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1969 Ferrari Dino 246 GT",
+"make": "Ferrari",
+"year": 1969,
 "division": "Vintage Exotic GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1967 Ferrari #24 Ferrari Spa 330 P4",
+"make": "Ferrari",
+"year": 1967,
 "division": "Vintage Le Mans Prototypes",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1964 Ferrari F-158",
+"make": "Ferrari",
+"year": 1964,
 "division": "Formula 60s",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1963 Ferrari 250LM",
+"make": "Ferrari",
+"year": 1963,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1962 Ferrari 250 GTO",
+"make": "Ferrari",
+"year": 1962,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1962 Ferrari 250 GT Berlinetta Lusso",
+"make": "Ferrari",
+"year": 1962,
 "division": "Sport Coupe Icons",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1957 Ferrari 250 Testa Rossa",
+"make": "Ferrari",
+"year": 1957,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1953 Ferrari 500 Mondial",
+"make": "Ferrari",
+"year": 1953,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1948 Ferrari 166 Inter Sport",
+"make": "Ferrari",
+"year": 1948,
 "division": "The Birth of Grand Prix",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2024 Ford NASCAR Next Gen Mustang Dark Horse",
+"make": "Ford",
+"year": 2024,
 "division": "NASCAR",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2024 Ford #25 Mustang RTR",
+"make": "Ford",
+"year": 2024,
 "division": "Formula Drift",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2024 Ford #88 Mustang RTR",
+"make": "Ford",
+"year": 2024,
 "division": "Formula Drift",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2024 Ford #130 Mustang RTR",
+"make": "Ford",
+"year": 2024,
 "division": "Formula Drift",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2024 Ford Mustang Dark Horse",
+"make": "Ford",
+"year": 2024,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2024 Ford Mustang GT",
+"make": "Ford",
+"year": 2024,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2024 Ford Mustang GT3",
+"make": "Ford",
+"year": 2024,
 "division": "Forza GT3",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2020 Ford Mustang Shelby GT500",
+"make": "Ford",
+"year": 2020,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Ford #98 Breathless Pro Racing TA Mustang",
+"make": "Ford",
+"year": 2018,
 "division": "Forza T/A",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Ford Mustang GT",
+"make": "Ford",
+"year": 2018,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Ford GT",
+"make": "Ford",
+"year": 2017,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2017 Ford #17 Shell V-Power Racing Team Falcon FG X",
+"make": "Ford",
+"year": 2017,
 "division": "Forza AUS",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Ford Focus RS",
+"make": "Ford",
+"year": 2017,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2016 Ford #66 Ford Racing GT Le Mans",
+"make": "Ford",
+"year": 2016,
 "division": "Forza GT2",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2016 Ford Shelby GT-350R",
+"make": "Ford",
+"year": 2016,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Ford #02 Chip Ganassi Racing Riley Mk XXVI Daytona Prototype",
+"make": "Ford",
+"year": 2015,
 "division": "Forza P2",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2015 Ford Falcon GT F 351",
+"make": "Ford",
+"year": 2015,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2014 Ford FPV Limited Edition Pursuit Ute",
+"make": "Ford",
+"year": 2014,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2014 Ford #17 AMD Tuning Focus ST BTCC",
+"make": "Ford",
+"year": 2014,
 "division": "Forza Touring Cars",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2013 Ford Shelby GT500",
+"make": "Ford",
+"year": 2013,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2009 Ford Focus RS",
+"make": "Ford",
+"year": 2009,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2005 Ford Ford GT",
+"make": "Ford",
+"year": 2005,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2003 Ford Focus RS",
+"make": "Ford",
+"year": 2003,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2000 Ford SVT Cobra R",
+"make": "Ford",
+"year": 2000,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1999 Ford Racing Puma",
+"make": "Ford",
+"year": 1999,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1995 Ford Mustang SVT Cobra R",
+"make": "Ford",
+"year": 1995,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1993 Ford SVT Cobra R",
+"make": "Ford",
+"year": 1993,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1992 Ford Escort RS Cosworth",
+"make": "Ford",
+"year": 1992,
 "division": "Hot Hatch Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1992 Ford Falcon GT",
+"make": "Ford",
+"year": 1992,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1991 Ford #15 Roush Racing Whistler Mustang",
+"make": "Ford",
+"year": 1991,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1987 Ford Sierra Cosworth RS500",
+"make": "Ford",
+"year": 1987,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1986 Ford Mustang SVO",
+"make": "Ford",
+"year": 1986,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1986 Ford Escort RS Turbo",
+"make": "Ford",
+"year": 1986,
 "division": "Hot Hatch Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1982 Ford #6 Zakspeed Roush Mustang IMSA GT",
+"make": "Ford",
+"year": 1982,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1981 Ford #2 Zakspeed Racing Capri Turbo",
+"make": "Ford",
+"year": 1981,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1981 Ford Fiesta XR2",
+"make": "Ford",
+"year": 1981,
 "division": "Hot Hatch Icons",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1977 Ford Escort RS1800",
+"make": "Ford",
+"year": 1977,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1973 Ford XB Falcon GT",
+"make": "Ford",
+"year": 1973,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1973 Ford Escort RS1600",
+"make": "Ford",
+"year": 1973,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1972 Ford Falcon XA GT-HO",
+"make": "Ford",
+"year": 1972,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1970 Ford #15 Mustang Boss 302 Trans Am",
+"make": "Ford",
+"year": 1970,
 "division": "Vintage Trans Am",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1969 Ford Mustang Boss 302",
+"make": "Ford",
+"year": 1969,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1968 Ford Mustang GT 2+2 Fastback",
+"make": "BAC",
+"year": 1968,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1966 Ford #2 GT40 MkII Le Mans",
+"make": "Ford",
+"year": 1966,
 "division": "Vintage Le Mans Prototypes",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1966 Ford Lotus Cortina",
+"make": "Ford",
+"year": 1966,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1965 Ford Mustang GT Coupe",
+"make": "Ford",
+"year": 1965,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1964 Ford GT40 Mk I",
+"make": "Ford",
+"year": 1964,
 "division": "Vintage Le Mans Prototypes",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2020 Formula Drift #91 BMW M2",
+"make": "BMW",
+"year": 2020,
 "division": "Formula Drift",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2020 Formula Drift #151 Toyota GR Supra",
+"make": "Toyota",
+"year": 2020,
 "division": "Formula Drift",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2016 Formula Drift #530 HSV Maloo Gen-F",
+"make": "HSV",
+"year": 2016,
 "division": "Formula Drift",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Formula Drift #13 Ford Mustang",
+"make": "Ford",
+"year": 2015,
 "division": "Formula Drift",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2006 Formula Drift #43 Dodge Viper SRT10",
+"make": "Dodge",
+"year": 2006,
 "division": "Formula Drift",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2001 Formula Drift #215 Nissan Silvia Spec-R",
+"make": "Nissan",
+"year": 2001,
 "division": "Formula Drift",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1995 Formula Drift #34 Toyota Supra MKIV",
+"make": "Toyota",
+"year": 1995,
 "division": "Formula Drift",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1997 Formula Drift #777 Nissan 240SX",
+"make": "Nissan",
+"year": 1997,
 "division": "Formula Drift",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1975 Forsberg Racing Nissan ‘Gold Leader’ Datsun 280Z",
+"make": "Datsun",
+"year": 1975,
 "division": "Formula Drift",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2019 Ginetta #6 Team LNT Ginetta G60-LT-P1",
+"make": "Ginetta",
+"year": 2019,
 "division": "Forza P1",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2019 Ginetta G55 GT4",
+"make": "Ginetta",
+"year": 2019,
 "division": "Forza GT4",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2019 Ginetta G40 Junior",
+"make": "Ginetta",
+"year": 2019,
 "division": "G40 Junior Spec",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2022 Gordon Murray Automotive T.50",
+"make": "Gordon Murray Automotive",
+"year": 2022,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2019 Hennessey Camaro Exorcist",
+"make": "Hennessey",
+"year": 2019,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1985 HDT VK Commodore Group A",
+"make": "HDT",
+"year": 1985,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Holden #22 Walkinshaw Performance VF Commodore",
+"make": "Holden",
+"year": 2017,
 "division": "Forza AUS",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2013 Holden #10 Holden Xbox Racing Team Commodore VF",
+"make": "Holden",
+"year": 2013,
 "division": "Forza AUS",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1991 Holden HSV Commodore Group A SV",
+"make": "Holden",
+"year": 1991,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1988 Holden VL Commodore Group A SV",
+"make": "Holden",
+"year": 1988,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1977 Holden Torana A9X",
+"make": "Holden",
+"year": 1977,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1973 Holden HQ Monaro GTS 350",
+"make": "Holden",
+"year": 1973,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1968 Holden Monaro GTS 327",
+"make": "Holden",
+"year": 1968,
 "division": "Street Drag Racers",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2025 Honda IndyCar",
+"make": "Honda",
+"year": 2025,
 "division": "IndyCar",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2020 Honda #73 LA Honda World Racing Civic",
+"make": "Honda",
+"year": 2020,
 "division": "Forza Touring Cars",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2018 Honda Civic Type R",
+"make": "Honda",
+"year": 2018,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2009 Honda S2000 CR",
+"make": "Honda",
+"year": 2009,
 "division": "Modern Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2005 Honda NSX-R",
+"make": "Honda",
+"year": 2005,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2004 Honda Civic Type R",
+"make": "Honda",
+"year": 2004,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2000 Honda Prelude Type SH",
+"make": "Honda",
+"year": 2000,
 "division": "Early Sport Compact",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1997 Honda Civic Type R",
+"make": "Honda",
+"year": 1997,
 "division": "Hot Hatch Icons",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1992 Honda NSX-R",
+"make": "Honda",
+"year": 1992,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1991 Honda CR-X SiR",
+"make": "Honda",
+"year": 1991,
 "division": "Hot Hatch Icons",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1970 Honda S800",
+"make": "Honda",
+"year": 1970,
 "division": "Sport Coupe Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1967 Honda RA300",
+"make": "Honda",
+"year": 1967,
 "division": "Formula 60s",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2014 HSV Limited Edition Gen-F GTS Maloo",
+"make": "HSV",
+"year": 2014,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2014 HSV GEN-F GTS",
+"make": "HSV",
+"year": 2014,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2011 HSV GTS",
+"make": "HSV",
+"year": 2011,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1996 HSV GTSR",
+"make": "HSV",
+"year": 1996,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2023 Hyundai IONIQ 5 N",
+"make": "Hyundai",
+"year": 2023,
 "division": "Modern Hot Hatch",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2022 Hyundai Elantra N",
+"make": "Hyundai",
+"year": 2022,
 "division": "Modern Sport Compact",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2021 Hyundai #98 Bryan Herta Autosport Elantra N",
+"make": "Hyundai",
+"year": 2021,
 "division": "Forza Touring Cars",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2021 Hyundai i20 N",
+"make": "Hyundai",
+"year": 2021,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2020 Hyundai i30 N",
+"make": "Hyundai",
+"year": 2020,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2020 Hyundai #98 Bryan Herta Autosport Veloster N",
+"make": "Hyundai",
+"year": 2020,
 "division": "Forza Touring Cars",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2019 Hyundai Veloster N Forza Edition",
+"make": "Hyundai",
+"year": 2019,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2019 Hyundai Veloster N",
+"make": "Hyundai",
+"year": 2019,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2014 Infiniti Q50 Eau Rouge",
+"make": "Infiniti",
+"year": 2014,
 "division": "Sport Luxury",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2012 Infiniti IPL G Coupe",
+"make": "Infiniti",
+"year": 2012,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2003 Infiniti G35 Coupe",
+"make": "Infiniti",
+"year": 2003,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Jaguar F-TYPE R Coupé",
+"make": "Jaguar",
+"year": 2015,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Jaguar XKR-S GT",
+"make": "Jaguar",
+"year": 2015,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Jaguar XFR-S",
+"make": "Jaguar",
+"year": 2015,
 "division": "Sport Luxury",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1993 Jaguar XJ220S TWR",
+"make": "Jaguar",
+"year": 1993,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1993 Jaguar XJ220",
+"make": "Jaguar",
+"year": 1993,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1991 Jaguar Sport XJR-15",
+"make": "Jaguar",
+"year": 1991,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1988 Jaguar #1 Jaguar Racing XJR-9",
+"make": "Jaguar",
+"year": 1988,
 "division": "GTP/C",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1983 Jaguar #44 Group 44 XJR-5",
+"make": "Jaguar",
+"year": 1983,
 "division": "GTP/C",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1961 Jaguar E-type",
+"make": "Jaguar",
+"year": 1961,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1959 Jaguar Mk II 3.8",
+"make": "Jaguar",
+"year": 1959,
 "division": "Sport Coupe Icons",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1956 Jaguar D-Type",
+"make": "Jaguar",
+"year": 1956,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2020 Koenigsegg Jesko",
+"make": "Koenigsegg",
+"year": 2020,
 "division": "Modern Hypercars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2017 Koenigsegg Agera RS",
+"make": "Koenigsegg",
+"year": 2017,
 "division": "Modern Hypercars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2015 Koenigsegg One:1",
+"make": "Koenigsegg",
+"year": 2015,
 "division": "Modern Hypercars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2020 KTM X-Bow GT2",
+"make": "KTM",
+"year": 2020,
 "division": "Modern Factory Racecars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2018 KTM X-Bow GT4",
+"make": "KTM",
+"year": 2018,
 "division": "Forza GT4",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2013 KTM X-Bow R",
+"make": "KTM",
+"year": 2013,
 "division": "Track Toys",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2024 Lamborghini SC63",
+"make": "Lamborghini",
+"year": 2024,
 "division": "Forza Proto-H",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2024 Lamborghini Revuelto",
+"make": "Lamborghini",
+"year": 2024,
 "division": "Modern Exotic GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2022 Lamborghini Huracán EVO Spyder",
+"make": "Lamborghini",
+"year": 2022,
 "division": "Modern Sport GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2021 Lamborghini Countach LPI 800-4",
+"make": "Lamborghini",
+"year": 2021,
 "division": "Modern Hypercars",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2020 Lamborghini Essenza SCV12",
+"make": "Lamborghini",
+"year": 2020,
 "division": "Modern Factory Racecars",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2020 Lamborghini Huracán STO",
+"make": "Lamborghini",
+"year": 2020,
 "division": "Modern Sport GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2020 Lamborghini Huracán EVO",
+"make": "Lamborghini",
+"year": 2020,
 "division": "Modern Sport GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2019 Lamborghini Sián FKP 37",
+"make": "Lamborghini",
+"year": 2019,
 "division": "Modern Hypercars",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2018 Lamborghini #63 Squadra Corse Huracán Super Trofeo Evo",
+"make": "Lamborghini",
+"year": 2018,
 "division": "Super Trofeo",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2018 Lamborghini Aventador SVJ",
+"make": "Lamborghini",
+"year": 2018,
 "division": "Modern Exotic GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2018 Lamborghini Huracán Performante",
+"make": "Lamborghini",
+"year": 2018,
 "division": "Modern Sport GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2016 Lamborghini Centenario LP 770-4",
+"make": "Lamborghini",
+"year": 2016,
 "division": "Modern Exotic GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2016 Lamborghini Aventador Superveloce",
+"make": "Lamborghini",
+"year": 2016,
 "division": "Modern Exotic GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2015 Lamborghini #63 Squadra Corse Huracan LP620-2 Super Trofeo",
+"make": "Lamborghini",
+"year": 2015,
 "division": "Super Trofeo",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2014 Lamborghini Huracán LP 610-4",
+"make": "Lamborghini",
+"year": 2014,
 "division": "Modern Sport GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2013 Lamborghini Veneno",
+"make": "Lamborghini",
+"year": 2013,
 "division": "Modern Hypercars",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2012 Lamborghini Aventador J",
+"make": "Lamborghini",
+"year": 2012,
 "division": "Modern Exotic GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2011 Lamborghini Sesto Elemento",
+"make": "Lamborghini",
+"year": 2011,
 "division": "Modern Sport GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2011 Lamborghini Gallardo LP 570-4 Superleggera",
+"make": "Lamborghini",
+"year": 2011,
 "division": "Modern Sport GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2010 Lamborghini Murciélago LP 670-4 SV",
+"make": "Lamborghini",
+"year": 2010,
 "division": "Modern Exotic GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2008 Lamborghini Revénton",
+"make": "Lamborghini",
+"year": 2008,
 "division": "Modern Exotic GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "1999 Lamborghini Diablo GTR",
+"make": "Lamborghini",
+"year": 1999,
 "division": "Early Factory Racecars",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "1997 Lamborghini Diablo SV",
+"make": "Lamborghini",
+"year": 1997,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1988 Lamborghini Countach LP5000 QV",
+"make": "Lamborghini",
+"year": 1988,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1973 Lamborghini Espada 400 GT",
+"make": "Lamborghini",
+"year": 1973,
 "division": "Vintage Exotic GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1972 Lamborghini Jarama S",
+"make": "Lamborghini",
+"year": 1972,
 "division": "Vintage Exotic GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1967 Lamborghini Miura P400",
+"make": "Lamborghini",
+"year": 1967,
 "division": "Vintage Exotic GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1992 Lancia Delta HF Integrale EVO",
+"make": "Lancia",
+"year": 1992,
 "division": "Hot Hatch Icons",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2021 Lexus LC 500",
+"make": "Lexus",
+"year": 2021,
 "division": "Sport Luxury",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2020 Lexus #14 VASSER SULLIVAN RC F GT3",
+"make": "Lexus",
+"year": 2020,
 "division": "Forza GT3",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2020 Lexus RC F Track Edition",
+"make": "Lexus",
+"year": 2020,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Lexus RC F",
+"make": "Lexus",
+"year": 2015,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2014 Lexus IS 350 F Sport",
+"make": "Lexus",
+"year": 2014,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2013 Lexus GS350 F Sport",
+"make": "Lexus",
+"year": 2013,
 "division": "Sport Luxury",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2010 Lexus LFA",
+"make": "Lexus",
+"year": 2010,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2016 Ligier #11 Euro International JS P3",
+"make": "Ligier",
+"year": 2016,
 "division": "Forza P3",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1969 Lola #10 Simoniz Special T163",
+"make": "Lola",
+"year": 1969,
 "division": "Prototype Group Racing",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1969 Lola #6 Sunoco T70 MkIIIB",
+"make": "Lola",
+"year": 1969,
 "division": "Prototype Group Racing",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2023 Lotus Emira",
+"make": "Lotus",
+"year": 2023,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2020 Lotus Evija",
+"make": "Lotus",
+"year": 2020,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2018 Lotus Evora GT430",
+"make": "Lotus",
+"year": 2018,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2016 Lotus 3-Eleven",
+"make": "Lotus",
+"year": 2016,
 "division": "Track Toys",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2011 Lotus Evora S",
+"make": "Lotus",
+"year": 2011,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2002 Lotus Esprit V8",
+"make": "Lotus",
+"year": 2002,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1986 Lotus #12 Team Lotus 98T",
+"make": "Lotus",
+"year": 1986,
 "division": "Grand Prix Rivals",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1976 Lotus #5 Team Lotus 77",
+"make": "Lotus",
+"year": 1976,
 "division": "Formula 70s",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1971 Lotus Elan Sprint",
+"make": "Lotus",
+"year": 1971,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1967 Lotus Type 49",
+"make": "Lotus",
+"year": 1967,
 "division": "Formula 60s",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1965 Lotus #1 Team Lotus Type 40",
+"make": "Lotus",
+"year": 1965,
 "division": "Vintage Le Mans Prototypes",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1965 Lotus Team Lotus type 35",
+"make": "Lotus",
+"year": 1965,
 "division": "Formula 60s",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2021 Lynk & Co 03+",
+"make": "Lynk & Co",
+"year": 2021,
 "division": "Modern Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2020 Lynk & Co #62 Cyan Racing 03",
+"make": "Lynk & Co",
+"year": 2020,
 "division": "Forza Touring Cars",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2014 Maserati Ghibli S Q4",
+"make": "Maserati",
+"year": 2014,
 "division": "Sport Luxury",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2004 Maserati MC12",
+"make": "Maserati",
+"year": 2004,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1997 Maserati Ghibli Cup",
+"make": "Maserati",
+"year": 1997,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1961 Maserati Tipo 61 Birdcage",
+"make": "Maserati",
+"year": 1961,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1957 Maserati 300 S",
+"make": "Maserati",
+"year": 1957,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1953 Maserati A6GCS/53 PininFarina Berlinetta",
+"make": "Maserati",
+"year": 1953,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1939 Maserati 8CTF",
+"make": "Maserati",
+"year": 1939,
 "division": "The Birth of Grand Prix",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1970 Matra-Simca #146 Equipe Matra-Simca MS650 Tour de France",
+"make": "Matra-Simca",
+"year": 1970,
 "division": "Vintage Le Mans Prototypes",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2022 Mazda MX-5 Miata RF",
+"make": "Mazda",
+"year": 2022,
 "division": "Modern Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Mazda MX-5 Cup",
+"make": "Mazda",
+"year": 2017,
 "division": "Forza Specials",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2016 Mazda MX-5",
+"make": "Mazda",
+"year": 2016,
 "division": "Modern Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Mazda Formula Mazda",
+"make": "Mazda",
+"year": 2015,
 "division": "Formula Mazda Spec",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2014 Mazda #70 SpeedSource Lola B12/80",
+"make": "Lola",
+"year": 2014,
 "division": "Forza P2",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2013 Mazda MX-5",
+"make": "Mazda",
+"year": 2013,
 "division": "Modern Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2011 Mazda RX-8 R3",
+"make": "Mazda",
+"year": 2011,
 "division": "Modern Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2010 Mazda #16 Mazda Racing B09/86",
+"make": "Mazda",
+"year": 2010,
 "division": "Forza P2",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2008 Mazda Furai",
+"make": "Mazda",
+"year": 2008,
 "division": "Forza Specials",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2002 Mazda RX-7 Spirit R Type-A",
+"make": "Mazda",
+"year": 2002,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1997 Mazda RX-7",
+"make": "Mazda",
+"year": 1997,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1994 Mazda MX-5 Miata",
+"make": "Mazda",
+"year": 1994,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1992 Mazda 323 GT-R",
+"make": "Mazda",
+"year": 1992,
 "division": "Hot Hatch Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1991 Mazda #55 Mazda 787B",
+"make": "Mazda",
+"year": 1991,
 "division": "GTP/C",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1991 Mazda #62 RX-7",
+"make": "Mazda",
+"year": 1991,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1990 Mazda Savanna RX-7",
+"make": "Mazda",
+"year": 1990,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1990 Mazda MX-5 Miata",
+"make": "Mazda",
+"year": 1990,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1985 Mazda RX-7 GSL-SE",
+"make": "Mazda",
+"year": 1985,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1973 Mazda RX-3",
+"make": "Mazda",
+"year": 1973,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1972 Mazda Cosmo 110S Series II",
+"make": "Mazda",
+"year": 1972,
 "division": "Sport Coupe Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2023 McLaren Artura",
+"make": "McLaren",
+"year": 2023,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2021 McLaren 765LT Coupe",
+"make": "McLaren",
+"year": 2021,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2021 McLaren Sabre",
+"make": "McLaren",
+"year": 2021,
 "division": "Modern Hypercars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2021 McLaren 620R",
+"make": "McLaren",
+"year": 2021,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2020 McLaren GT",
+"make": "McLaren",
+"year": 2020,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2019 McLaren Senna GTR",
+"make": "McLaren",
+"year": 2019,
 "division": "Modern Factory Racecars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2019 McLaren #03 720S GT3",
+"make": "McLaren",
+"year": 2019,
 "division": "Forza GT3",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2019 McLaren 720S Spider",
+"make": "McLaren",
+"year": 2019,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2018 McLaren Senna",
+"make": "McLaren",
+"year": 2018,
 "division": "Modern Hypercars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2018 McLaren 720S Coupe",
+"make": "McLaren",
+"year": 2018,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2018 McLaren 600LT Coupé",
+"make": "McLaren",
+"year": 2018,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2015 McLaren P1 GTR",
+"make": "McLaren",
+"year": 2015,
 "division": "Modern Factory Racecars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2015 McLaren 650S Coupe",
+"make": "McLaren",
+"year": 2015,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2013 McLaren P1",
+"make": "McLaren",
+"year": 2013,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1997 McLaren F1 GT",
+"make": "McLaren",
+"year": 1997,
 "division": "Early Factory Racecars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1993 McLaren F1",
+"make": "McLaren",
+"year": 1993,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1988 McLaren #12 Honda McLaren MP4/4",
+"make": "Honda",
+"year": 1988,
 "division": "Grand Prix Rivals",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1976 McLaren #11 Team McLaren M23",
+"make": "McLaren",
+"year": 1976,
 "division": "Formula 70s",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1969 McLaren #4 McLaren Cars M8B",
+"make": "McLaren",
+"year": 1969,
 "division": "Prototype Group Racing",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1966 McLaren #4 Bruce McLaren Motor Racing M1B",
+"make": "McLaren",
+"year": 1966,
 "division": "Prototype Group Racing",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1966 McLaren M2B",
+"make": "McLaren",
+"year": 1966,
 "division": "Formula 60s",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2021 Mercedes-AMG Mercedes-AMG ONE",
+"make": "Mercedes-AMG",
+"year": 2021,
 "division": "Modern Hypercars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2020 Mercedes-AMG GT Black Series",
+"make": "Mercedes-AMG",
+"year": 2020,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Mercedes-AMG GT3",
+"make": "Mercedes-AMG",
+"year": 2018,
 "division": "Forza GT3",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Mercedes-AMG GT 4-Door Coupé",
+"make": "Mercedes-AMG",
+"year": 2018,
 "division": "Sport Luxury",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Mercedes-AMG E 63 S",
+"make": "Mercedes-AMG",
+"year": 2018,
 "division": "Sport Luxury",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Mercedes-AMG GT R",
+"make": "Mercedes-AMG",
+"year": 2017,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2016 Mercedes-AMG C 63 S Coupé Forza Edition",
+"make": "Mercedes-AMG",
+"year": 2016,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2016 Mercedes-AMG C 63 S Coupé",
+"make": "Mercedes-AMG",
+"year": 2016,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Mercedes-Benz #33 Mac Tools Ciceley Motorsports A-Class (A45)",
+"make": "Mercedes-Benz",
+"year": 2017,
 "division": "Forza Touring Cars",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2013 Mercedes-Benz A 45 AMG",
+"make": "Mercedes-Benz",
+"year": 2013,
 "division": "Modern Hot Hatch",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2012 Mercedes-Benz C 63 AMG Coupé Black Series",
+"make": "Mercedes-Benz",
+"year": 2012,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2012 Mercedes-Benz SLK 55 AMG",
+"make": "Mercedes-Benz",
+"year": 2012,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2011 Mercedes-Benz SLS AMG",
+"make": "Mercedes-Benz",
+"year": 2011,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2009 Mercedes-Benz SL 65 AMG Black Series",
+"make": "Mercedes-Benz",
+"year": 2009,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2004 Mercedes-Benz C 32 AMG",
+"make": "Mercedes-Benz",
+"year": 2004,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1998 Mercedes-Benz AMG CLK GTR",
+"make": "Mercedes-Benz",
+"year": 1998,
 "division": "Early Factory Racecars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1990 Mercedes-Benz 190E 2.5-16 Evolution II",
+"make": "Mercedes-Benz",
+"year": 1990,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1989 Mercedes-Benz #63 Sauber-Mercedes C 9",
+"make": "Mercedes-Benz",
+"year": 1989,
 "division": "GTP/C",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1955 Mercedes-Benz 300 SLR",
+"make": "Mercedes-Benz",
+"year": 1955,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1954 Mercedes-Benz 300 SL Coupé",
+"make": "Mercedes-Benz",
+"year": 1954,
 "division": "Sport Coupe Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1939 Mercedes-Benz W154",
+"make": "Mercedes-Benz",
+"year": 1939,
 "division": "The Birth of Grand Prix",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1990 Mercury #15 Whistler Radar Cougar XR-7",
+"make": "Mercury",
+"year": 1990,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1970 Mercury Cougar Eliminator",
+"make": "Mercury",
+"year": 1970,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1986 Merkur #11 MAC Tools XR4Ti",
+"make": "Merkur",
+"year": 1986,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2021 MG MG6 XPower",
+"make": "MG",
+"year": 2021,
 "division": "Modern Sport Touring",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2020 MG #20 MG6 XPower",
+"make": "MG",
+"year": 2020,
 "division": "Forza Touring Cars",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1966 MG MGB GT",
+"make": "MG",
+"year": 1966,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1958 MG MGA Twin-Cam",
+"make": "MG",
+"year": 1958,
 "division": "Sport Coupe Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2021 MINI John Cooper Works GP",
+"make": "MINI",
+"year": 2021,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2012 MINI John Cooper Works GP",
+"make": "MINI",
+"year": 2012,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1965 MINI Cooper S",
+"make": "MINI",
+"year": 1965,
 "division": "Vintage Sport Compact",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2008 Mitsubishi Lancer Evolution X GSR",
+"make": "Mitsubishi",
+"year": 2008,
 "division": "Modern Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2006 Mitsubishi Lancer Evolution IX MR",
+"make": "Mitsubishi",
+"year": 2006,
 "division": "Modern Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2005 Mitsubishi #1 Sierra Sierra Enterprises Lancer Evolution Time Attack",
+"make": "Mitsubishi",
+"year": 2005,
 "division": "Forza Specials",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2004 Mitsubishi Lancer Evolution VIII MR",
+"make": "Mitsubishi",
+"year": 2004,
 "division": "Early Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1999 Mitsubishi Lancer Evolution VI GSR",
+"make": "Mitsubishi",
+"year": 1999,
 "division": "Early Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1998 Mitsubishi FTO GP Version R",
+"make": "Mitsubishi",
+"year": 1998,
 "division": "Early Sport Compact",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1997 Mitsubishi GTO",
+"make": "Mitsubishi",
+"year": 1997,
 "division": "Early Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1995 Mitsubishi Lancer Evolution III GSR",
+"make": "Mitsubishi",
+"year": 1995,
 "division": "Early Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1995 Mitsubishi Eclipse GSX",
+"make": "Mitsubishi",
+"year": 1995,
 "division": "Early Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1992 Mitsubishi Galant VR-4",
+"make": "Mitsubishi",
+"year": 1992,
 "division": "Early Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2016 NIO EP9",
+"make": "NIO",
+"year": 2016,
 "division": "Modern Hypercars",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2024 Nissan Z NISMO",
+"make": "Nissan",
+"year": 2024,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2023 Nissan Z",
+"make": "Nissan",
+"year": 2023,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2020 Nissan GT-R NISMO (R35)",
+"make": "Nissan",
+"year": 2020,
 "division": "Modern Sport GT",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2019 Nissan 370Z Nismo",
+"make": "Nissan",
+"year": 2019,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Nissan Sentra NISMO",
+"make": "Nissan",
+"year": 2018,
 "division": "Modern Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Nissan Altima Racecar",
+"make": "Nissan",
+"year": 2017,
 "division": "Forza AUS",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Nissan GT-R (R35)",
+"make": "Nissan",
+"year": 2017,
 "division": "Modern Sport GT",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2015 Nissan #23 GT-R LM NISMO",
+"make": "Nissan",
+"year": 2015,
 "division": "Forza P1",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2003 Nissan Fairlady Z",
+"make": "Nissan",
+"year": 2003,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2002 Nissan Skyline GT-R V-Spec II",
+"make": "Nissan",
+"year": 2002,
 "division": "Sport GT Icons",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2000 Nissan Silvia Spec-R",
+"make": "Nissan",
+"year": 2000,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1999 Nissan #23 NISMO Clarion R391",
+"make": "Nissan",
+"year": 1999,
 "division": "Early LMP",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1998 Nissan R390 (GT1)",
+"make": "Nissan",
+"year": 1998,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1998 Nissan Silvia K's Aero",
+"make": "Nissan",
+"year": 1998,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1998 Nissan #23 Pennzoil NISMO Skyline GT-R",
+"make": "Nissan",
+"year": 1998,
 "division": "GTX Sportscars",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1997 Nissan Skyline GT-R V-Spec",
+"make": "Nissan",
+"year": 1997,
 "division": "Sport GT Icons",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1994 Nissan Fairlady Z Version S Twin Turbo",
+"make": "Nissan",
+"year": 1994,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1994 Nissan Silvia K's",
+"make": "Nissan",
+"year": 1994,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1993 Nissan Skyline GT-R V-Spec",
+"make": "Nissan",
+"year": 1993,
 "division": "Sport GT Icons",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1993 Nissan 240SX SE",
+"make": "Nissan",
+"year": 1993,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1992 Nissan Silvia CLUB K's",
+"make": "Nissan",
+"year": 1992,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1991 Nissan #23 Nissan R91CP",
+"make": "Nissan",
+"year": 1991,
 "division": "GTP/C",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1990 Nissan Pulsar GTi-R",
+"make": "Nissan",
+"year": 1990,
 "division": "Early Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1988 Nissan #24 Nissan Motorsports International R88C",
+"make": "Nissan",
+"year": 1988,
 "division": "GTP/C",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1988 Nissan #33 Bob Sharp Racing 300ZX",
+"make": "Nissan",
+"year": 1988,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1987 Nissan Skyline GTS-R (HR31)",
+"make": "Nissan",
+"year": 1987,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1985 Nissan #83 GTP ZX-Turbo",
+"make": "Nissan",
+"year": 1985,
 "division": "GTP/C",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1984 Nissan #20 Bluebird Super Silhouette",
+"make": "Nissan",
+"year": 1984,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1984 Nissan #11 Tomica Skyline Turbo Super Silhouette",
+"make": "Nissan",
+"year": 1984,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1983 Nissan #23 Nissan Motorsports Silvia Super Silhouette",
+"make": "Nissan",
+"year": 1983,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1973 Nissan Skyline H/T 2000GT-R",
+"make": "Nissan",
+"year": 1973,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1971 Nissan Skyline 2000GT-R",
+"make": "Nissan",
+"year": 1971,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1969 Nissan #21 Nissan Racing R382",
+"make": "Nissan",
+"year": 1969,
 "division": "Prototype Group Racing",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1969 Nissan Fairlady Z 432",
+"make": "Nissan",
+"year": 1969,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1967 Nissan R380 II",
+"make": "Nissan",
+"year": 1967,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1990 Oldsmobile #75 Cutlass Supreme Trans Am",
+"make": "Oldsmobile",
+"year": 1990,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1969 Oldsmobile Hurst/Olds 442",
+"make": "Oldsmobile",
+"year": 1969,
 "division": "Street Drag Racers",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1979 Opel Kadett C GT/E",
+"make": "Opel",
+"year": 1979,
 "division": "Vintage Sport Compact",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2020 Oreca #38 Performance Tech Motorsports Oreca 07",
+"make": "Oreca",
+"year": 2020,
 "division": "Forza P2",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2017 Oreca #38 Jackie Chan DC Racing Oreca 07",
+"make": "Oreca",
+"year": 2017,
 "division": "Forza P2",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2022 Pagani Huayra R",
+"make": "Pagani",
+"year": 2022,
 "division": "Modern Factory Racecars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2016 Pagani Huayra BC",
+"make": "Pagani",
+"year": 2016,
 "division": "Modern Hypercars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2009 Pagani Zonda Cinque Roadster",
+"make": "Pagani",
+"year": 2009,
 "division": "Modern Hypercars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2018 Peugeot #7 DG Sport Compétition 308",
+"make": "Peugeot",
+"year": 2018,
 "division": "Forza Touring Cars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2011 Peugeot 308 GTI",
+"make": "Peugeot",
+"year": 2011,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1993 Peugeot #3 Peugeot Talbot Sport 905 EVO 1C",
+"make": "Peugeot",
+"year": 1993,
 "division": "GTP/C",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1984 Peugeot 205 Turbo 16",
+"make": "Peugeot",
+"year": 1984,
 "division": "Hot Hatch Icons",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1971 Plymouth Cuda 426 HEMI",
+"make": "Plymouth",
+"year": 1971,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1971 Plymouth GTX 426 HEMI",
+"make": "Plymouth",
+"year": 1971,
 "division": "Street Drag Racers",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2002 Pontiac Firebird Trans Am Ram Air",
+"make": "Pontiac",
+"year": 2002,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1987 Pontiac Firebird Trans Am GTA",
+"make": "Pontiac",
+"year": 1987,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1973 Pontiac Firebird Trans Am SD-455",
+"make": "Pontiac",
+"year": 1973,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1969 Pontiac GTO Judge",
+"make": "Pontiac",
+"year": 1969,
 "division": "Street Drag Racers",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1969 Pontiac Firebird Trans Am",
+"make": "Pontiac",
+"year": 1969,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2024 Porsche #5 Porsche Penske Motorsport 963",
+"make": "Porsche",
+"year": 2024,
 "division": "Forza Proto-H",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2023 Porsche 911 Turbo S",
+"make": "Porsche",
+"year": 2023,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2023 Porsche 911 GT3 R",
+"make": "Porsche",
+"year": 2023,
 "division": "Forza GT3",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2023 Porsche 911 GT3 RS",
+"make": "Porsche",
+"year": 2023,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2022 Porsche 718 Cayman GT4 RS",
+"make": "Porsche",
+"year": 2022,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2021 Porsche Mission R",
+"make": "Porsche",
+"year": 2021,
 "division": "Mission R Spec",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2021 Porsche 911 GT3",
+"make": "Porsche",
+"year": 2021,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2020 Porsche Taycan Turbo S",
+"make": "Porsche",
+"year": 2020,
 "division": "Sport Luxury",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2019 Porsche #70 Porsche Motorsport 935",
+"make": "Porsche",
+"year": 2019,
 "division": "Modern Factory Racecars",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2019 Porsche 911 GT3 RS",
+"make": "Porsche",
+"year": 2019,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2019 Porsche 911 Speedster",
+"make": "Porsche",
+"year": 2019,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2019 Porsche 911 Carrera S",
+"make": "Porsche",
+"year": 2019,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2018 Porsche 911 GT2 RS Forza Edition",
+"make": "Porsche",
+"year": 2018,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2018 Porsche 911 GT2 RS",
+"make": "Porsche",
+"year": 2018,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2018 Porsche #73 Park Place Motorsports 911 GT3 R",
+"make": "Porsche",
+"year": 2018,
 "division": "Forza GT3",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2018 Porsche 718 Cayman GTS",
+"make": "Porsche",
+"year": 2018,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2017 Porsche #2 Porsche Team 919 Hybrid",
+"make": "Porsche",
+"year": 2017,
 "division": "Forza P1",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2017 Porsche #92 Porsche GT Team 911 RSR",
+"make": "Porsche",
+"year": 2017,
 "division": "Forza GT2",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2017 Porsche Panamera Turbo",
+"make": "Porsche",
+"year": 2017,
 "division": "Sport Luxury",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2016 Porsche Cayman GT4",
+"make": "Porsche",
+"year": 2016,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2016 Porsche 911 GT3 RS",
+"make": "Porsche",
+"year": 2016,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2015 Porsche #91 Porsche Team Manthey 991 RSR",
+"make": "Porsche",
+"year": 2015,
 "division": "Forza GT2",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Porsche Cayman GTS",
+"make": "Porsche",
+"year": 2015,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2014 Porsche 918 Spyder",
+"make": "Porsche",
+"year": 2014,
 "division": "Modern Exotic GT",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2014 Porsche 911 Turbo S",
+"make": "Porsche",
+"year": 2014,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2012 Porsche 911 GT2 RS",
+"make": "Porsche",
+"year": 2012,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2007 Porsche 911 GT3",
+"make": "Porsche",
+"year": 2007,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2004 Porsche 911 GT3",
+"make": "Porsche",
+"year": 2004,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "2003 Porsche Carrera GT",
+"make": "Porsche",
+"year": 2003,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1997 Porsche 911 GT1 Strassenversion",
+"make": "Porsche",
+"year": 1997,
 "division": "Early Factory Racecars",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "1995 Porsche 911 GT2",
+"make": "Porsche",
+"year": 1995,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "1993 Porsche 911 Turbo S Leichtbau",
+"make": "Porsche",
+"year": 1993,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "1993 Porsche 968 Turbo S",
+"make": "Porsche",
+"year": 1993,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1993 Porsche 928 GTS",
+"make": "Porsche",
+"year": 1993,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1989 Porsche 944 Turbo",
+"make": "Porsche",
+"year": 1989,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1987 Porsche #203 Porsche AG 961",
+"make": "Porsche",
+"year": 1987,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "1987 Porsche #17 Porsche AG 962c",
+"make": "Porsche",
+"year": 1987,
 "division": "GTP/C",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1987 Porsche 959",
+"make": "Porsche",
+"year": 1987,
 "division": "Exotic GT Classics",
 "dt": "AWD",
 "layout": "rear"
 },
 {
 "name": "1983 Porsche #11 John Fitzpatrick Racing 956",
+"make": "Porsche",
+"year": 1983,
 "division": "GTP/C",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1982 Porsche 911 Turbo 3.3",
+"make": "Porsche",
+"year": 1982,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "1981 Porsche #1 Porsche System Engineering 924 GTP Le Mans",
+"make": "Porsche",
+"year": 1981,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1980 Porsche 924 Carrera GTS",
+"make": "Porsche",
+"year": 1980,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1978 Porsche #78 MOMO 935/78",
+"make": "Porsche",
+"year": 1978,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "1978 Porsche #43 Porsche Racing 935/78",
+"make": "Porsche",
+"year": 1978,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "1974 Porsche #1 911 RSR",
+"make": "Porsche",
+"year": 1974,
 "division": "GTX Sportscars",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "1973 Porsche 911 Carrera RS",
+"make": "Porsche",
+"year": 1973,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "1971 Porsche #23 917/20",
+"make": "Porsche",
+"year": 1971,
 "division": "Vintage Le Mans Prototypes",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1970 Porsche #3 917 LH",
+"make": "Porsche",
+"year": 1970,
 "division": "Vintage Le Mans Prototypes",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1970 Porsche 914/6",
+"make": "Porsche",
+"year": 1970,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1960 Porsche 718 RS 60",
+"make": "Porsche",
+"year": 1960,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1957 Porsche 356A Speedster",
+"make": "Porsche",
+"year": 1957,
 "division": "Sport Coupe Icons",
 "dt": "RWD",
 "layout": "rear"
 },
 {
 "name": "1955 Porsche 550 Spyder",
+"make": "Porsche",
+"year": 1955,
 "division": "Sport Coupe Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Radical RXC Turbo",
+"make": "Radical",
+"year": 2015,
 "division": "Track Toys",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2019 RAESR Tachyon Speed",
+"make": "RAESR",
+"year": 2019,
 "division": "Modern Hypercars",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2018 Renault Megane R.S.",
+"make": "Renault",
+"year": 2018,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2016 Renault Clio R.S. 16 Concept",
+"make": "Renault",
+"year": 2016,
 "division": "Modern Hot Hatch",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2008 Renault Mégane R26.R",
+"make": "Renault",
+"year": 2008,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2003 Renault Sport Clio V6",
+"make": "Renault",
+"year": 2003,
 "division": "Modern Hot Hatch",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1993 Renault Clio Williams",
+"make": "Renault",
+"year": 1993,
 "division": "Hot Hatch Icons",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1980 Renault 5 Turbo",
+"make": "Renault",
+"year": 1980,
 "division": "Hot Hatch Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1977 Renault #15 Equipe Renault Elf R.S. 01",
+"make": "Renault",
+"year": 1977,
 "division": "Formula 70s",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1967 Renault 8 Gordini",
+"make": "Renault",
+"year": 1967,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2021 Rimac Nevera",
+"make": "Rimac",
+"year": 2021,
 "division": "Modern Hypercars",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2019 Rimac Concept Two",
+"make": "Rimac",
+"year": 2019,
 "division": "Modern Hypercars",
 "dt": "AWD",
 "layout": "mid"
 },
 {
 "name": "2018 Saleen S302 Black Label",
+"make": "Saleen",
+"year": 2018,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 Saleen S1",
+"make": "Saleen",
+"year": 2018,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 Saleen S7 LM",
+"make": "Saleen",
+"year": 2017,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2004 Saleen S7",
+"make": "Saleen",
+"year": 2004,
 "division": "Exotic GT Classics",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1967 Shelby GT 500",
+"make": "Shelby",
+"year": 1967,
 "division": "Vintage Muscle",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1965 Shelby Cobra Daytona Coupe",
+"make": "Shelby",
+"year": 1965,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1965 Shelby Cobra 427 S/C",
+"make": "Shelby",
+"year": 1965,
 "division": "Vintage Le Mans Sportscars",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1963 Shelby Monaco King Cobra",
+"make": "Shelby",
+"year": 1963,
 "division": "Vintage Le Mans Prototypes",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2016 Spania GTA GTA Spano",
+"make": "Spania GTA",
+"year": 2016,
 "division": "Modern Exotic GT",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2013 SRT Viper GTS",
+"make": "SRT",
+"year": 2013,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2022 SUBARU BRZ",
+"make": "SUBARU",
+"year": 2022,
 "division": "Modern Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2019 SUBARU STI S209 Forza Edition",
+"make": "SUBARU",
+"year": 2019,
 "division": "Modern Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2019 SUBARU STI S209",
+"make": "SUBARU",
+"year": 2019,
 "division": "Modern Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2018 SUBARU #1 Adrian Flux SUBARU Racing Levorg GT",
+"make": "SUBARU",
+"year": 2018,
 "division": "Forza Touring Cars",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2015 SUBARU WRX STI",
+"make": "SUBARU",
+"year": 2015,
 "division": "Modern Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2013 SUBARU BRZ",
+"make": "SUBARU",
+"year": 2013,
 "division": "Modern Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2011 SUBARU WRX STI",
+"make": "SUBARU",
+"year": 2011,
 "division": "Modern Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2008 SUBARU IMPREZA WRX STI",
+"make": "SUBARU",
+"year": 2008,
 "division": "Modern Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2005 SUBARU IMPREZA WRX STi",
+"make": "SUBARU",
+"year": 2005,
 "division": "Modern Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2004 SUBARU IMPREZA WRX STI",
+"make": "SUBARU",
+"year": 2004,
 "division": "Early Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1998 SUBARU Impreza 22B-STi Version",
+"make": "SUBARU",
+"year": 1998,
 "division": "Early Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1990 SUBARU LEGACY RS",
+"make": "SUBARU",
+"year": 1990,
 "division": "Early Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2024 Toyota NASCAR Next Gen Camry XSE",
+"make": "Toyota",
+"year": 2024,
 "division": "NASCAR",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2023 Toyota Camry TRD",
+"make": "Toyota",
+"year": 2023,
 "division": "Modern Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2022 Toyota GR86",
+"make": "Toyota",
+"year": 2022,
 "division": "Modern Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2021 Toyota GR Yaris",
+"make": "Toyota",
+"year": 2021,
 "division": "Modern Hot Hatch",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2020 Toyota GR Supra",
+"make": "Toyota",
+"year": 2020,
 "division": "Modern Sport Coupe",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2019 Toyota 86 TRD SE",
+"make": "Toyota",
+"year": 2019,
 "division": "Modern Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2014 Toyota #8 Toyota Racing TS040 HYBRID",
+"make": "Toyota",
+"year": 2014,
 "division": "Forza P1",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2003 Toyota Celica Sport Specialty II",
+"make": "Toyota",
+"year": 2003,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1999 Toyota #3 Toyota Motorsports GT-ONE TS020",
+"make": "Toyota",
+"year": 1999,
 "division": "Early LMP",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1998 Toyota Supra RZ",
+"make": "Toyota",
+"year": 1998,
 "division": "Sport GT Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1997 Toyota Mark II Tourer V JZX100",
+"make": "Toyota",
+"year": 1997,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1995 Toyota MR2 GT",
+"make": "Toyota",
+"year": 1995,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1994 Toyota Celica GT-Four ST205",
+"make": "Toyota",
+"year": 1994,
 "division": "Early Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1992 Toyota #99 All American Racers Toyota Eagle MkIII",
+"make": "Toyota",
+"year": 1992,
 "division": "GTP/C",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1992 Toyota Celica GT-Four RC ST185",
+"make": "Toyota",
+"year": 1992,
 "division": "Early Sport Compact",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1992 Toyota Supra 2.0 GT",
+"make": "Toyota",
+"year": 1992,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1989 Toyota MR2 SC",
+"make": "Toyota",
+"year": 1989,
 "division": "Early Sport Compact",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "1985 Toyota Sprinter Trueno GT Apex",
+"make": "Toyota",
+"year": 1985,
 "division": "Hot Hatch Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1984 Toyota #25 Horsepower Techs Starlet Time Attack",
+"make": "Toyota",
+"year": 1984,
 "division": "Forza Specials",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1974 Toyota Celica GT",
+"make": "Toyota",
+"year": 1974,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1974 Toyota Corolla SR5",
+"make": "Toyota",
+"year": 1974,
 "division": "Vintage Sport Compact",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "1969 Toyota 2000GT",
+"make": "Toyota",
+"year": 1969,
 "division": "Sport Coupe Icons",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2018 TVR Griffith",
+"make": "TVR",
+"year": 2018,
 "division": "Modern Sport GT",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2015 Ultima Evolution Coupe 1020",
+"make": "Ultima",
+"year": 2015,
 "division": "Track Toys",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2017 Vauxhall #66 Power Maxed TAG Racing Astra",
+"make": "Vauxhall",
+"year": 2017,
 "division": "Forza Touring Cars",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2016 Vauxhall Corsa VXR",
+"make": "Vauxhall",
+"year": 2016,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2012 Vauxhall Astra VXR",
+"make": "Vauxhall",
+"year": 2012,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2006 Vauxhall Astra VXR",
+"make": "Vauxhall",
+"year": 2006,
 "division": "Modern Hot Hatch",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1990 Vauxhall Lotus Carlton",
+"make": "Lotus",
+"year": 1990,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2022 Volkswagen Golf R",
+"make": "Volkswagen",
+"year": 2022,
 "division": "Modern Hot Hatch",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2021 Volkswagen Golf R",
+"make": "Volkswagen",
+"year": 2021,
 "division": "Modern Hot Hatch",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2018 Volkswagen #22 Experion Racing Golf GTI",
+"make": "Volkswagen",
+"year": 2018,
 "division": "Forza Touring Cars",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "2014 Volkswagen Golf R",
+"make": "Volkswagen",
+"year": 2014,
 "division": "Modern Hot Hatch",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "2003 Volkswagen Golf R32",
+"make": "Volkswagen",
+"year": 2003,
 "division": "Modern Hot Hatch",
 "dt": "AWD",
 "layout": "front"
 },
 {
 "name": "1998 Volkswagen Gti VR6 Mk3",
+"make": "Volkswagen",
+"year": 1998,
 "division": "Hot Hatch Icons",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1995 Volkswagen Corrado VR6",
+"make": "Volkswagen",
+"year": 1995,
 "division": "Hot Hatch Icons",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1992 Volkswagen Golf Gti 16v Mk2",
+"make": "Volkswagen",
+"year": 1992,
 "division": "Hot Hatch Icons",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1988 Volkswagen Scirocco 16v",
+"make": "Volkswagen",
+"year": 1988,
 "division": "Hot Hatch Icons",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1983 Volkswagen Golf GTI",
+"make": "Volkswagen",
+"year": 1983,
 "division": "Hot Hatch Icons",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1981 Volkswagen Scirocco S",
+"make": "Volkswagen",
+"year": 1981,
 "division": "Hot Hatch Icons",
 "dt": "FWD",
 "layout": "front"
 },
 {
 "name": "1997 Volvo 850 R",
+"make": "Volvo",
+"year": 1997,
 "division": "Sport Touring Classics",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2017 VUHL 05RR",
+"make": "VUHL",
+"year": 2017,
 "division": "Track Toys",
 "dt": "RWD",
 "layout": "mid"
 },
 {
 "name": "2020 Xpeng P7",
+"make": "Xpeng",
+"year": 2020,
 "division": "Modern Sport Touring",
 "dt": "RWD",
 "layout": "front"
 },
 {
 "name": "2019 Zenvo TSR-S",
+"make": "Zenvo",
+"year": 2019,
 "division": "Modern Hypercars",
 "dt": "RWD",
 "layout": "mid"
@@ -4915,22 +6321,114 @@ window.FORZA_TRACKS = [
     });
   }
 
-  // ---- populate car list ----
-  function fillCars(){
-    var dl = $("#carlist"); dl.innerHTML = "";
-    cars.forEach(function(c){
-      var o = document.createElement("option");
-      o.value = c.name;
-      if(c.division) o.label = c.division;
-      dl.appendChild(o);
-    });
-    updateRosterState();
-  }
+  // ---- searchable car combobox (shows CAR NAMES) ----
+  var comboActive = -1;   // index of highlighted item in current render
+  var comboMatches = [];  // current filtered cars
+
+  function fillCars(){ updateRosterState(); } // datalist replaced by combobox
   function updateRosterState(){
     $("#rosterState").textContent = "roster: " + cars.length + " cars";
   }
   function findCar(name){
     return cars.find(function(c){return c.name.toLowerCase() === (name||"").toLowerCase();});
+  }
+  function escHtml(s){ return String(s).replace(/[&<>]/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[m];}); }
+  function highlight(name, q){
+    if(!q) return escHtml(name);
+    var i = name.toLowerCase().indexOf(q.toLowerCase());
+    if(i < 0) return escHtml(name);
+    return escHtml(name.slice(0,i)) + "<mark>" + escHtml(name.slice(i,i+q.length)) + "</mark>" + escHtml(name.slice(i+q.length));
+  }
+  function openCombo(){ $("#carList").hidden = false; $("#car").setAttribute("aria-expanded","true"); }
+  function closeCombo(){ $("#carList").hidden = true; $("#car").setAttribute("aria-expanded","false"); comboActive = -1; }
+
+  function renderCombo(q){
+    var list = $("#carList");
+    var ql = (q||"").toLowerCase().trim();
+    comboMatches = ql ? cars.filter(function(c){return c.name.toLowerCase().indexOf(ql) >= 0;}) : cars.slice();
+    var CAP_SHOW = 60;
+    var shown = comboMatches.slice(0, CAP_SHOW);
+    var html = "";
+    if(!shown.length){
+      html = '<li class="combo-empty">No car matches "' + escHtml(q) + '". You can still generate a generic tune from the toggles.</li>';
+    } else {
+      shown.forEach(function(c, i){
+        html += '<li class="combo-item" role="option" data-i="' + i + '">' +
+                  '<span class="cname">' + highlight(c.name, ql) + '</span>' +
+                  (c.division ? '<span class="cdiv">' + escHtml(c.division) + '</span>' : '') +
+                '</li>';
+      });
+      if(comboMatches.length > CAP_SHOW){
+        html += '<li class="combo-more">' + (comboMatches.length - CAP_SHOW) + ' more — keep typing to narrow</li>';
+      }
+    }
+    list.innerHTML = html;
+    comboActive = -1;
+    openCombo();
+  }
+
+  function selectCar(c){
+    if(!c) return;
+    $("#car").value = c.name;
+    applyCarDefaults(c);
+    closeCombo();
+  }
+  function applyCarDefaults(c){
+    if(c.layout) setToggle("layout", c.layout);
+    if(c.dt) setToggle("drivetrain", c.dt);
+    if(c.cls && CAP[c.cls]){ $("#piClass").value = c.cls; syncClassRange(); }
+    showCarStats(c);
+  }
+  var LAYOUT_LABEL = { front:"Front engine", mid:"Mid engine", rear:"Rear engine" };
+  function showCarStats(c){
+    if(!c){ $("#carStats").hidden = true; return; }
+    $("#csYear").textContent  = c.year || "—";
+    $("#csMake").textContent  = c.make || "—";
+    $("#csDiv").textContent   = c.division || "—";
+    $("#csDt").innerHTML      = (c.dt || "—") + ' <span class="auto">· auto</span>';
+    $("#csLayout").innerHTML  = (LAYOUT_LABEL[c.layout] || c.layout || "—") + ' <span class="auto">· auto</span>';
+    $("#csPi").textContent    = c.pi ? String(c.pi) : "—";
+    $("#csCls").textContent   = c.cls || "—";
+    $("#csWeight").textContent = c.weight
+      ? (c.weight + " lb" + (c.fdist ? " · " + c.fdist + "% front" : ""))
+      : "—";
+    $("#csNote").textContent = (!c.pi && !c.weight)
+      ? "Stock PI, class and weight aren't in the bundled official data. Drivetrain and layout are auto-inferred — override them with the toggles. Load an enriched roster (see README) to fill in PI/weight."
+      : "Drivetrain and layout are auto-inferred — override them below if needed.";
+    $("#carStats").hidden = false;
+  }
+  function setActive(n){
+    var items = $("#carList").querySelectorAll(".combo-item");
+    if(!items.length) return;
+    comboActive = (n + items.length) % items.length;
+    Array.prototype.forEach.call(items, function(el, i){
+      el.classList.toggle("active", i === comboActive);
+      if(i === comboActive && el.scrollIntoView) el.scrollIntoView({block:"nearest"});
+    });
+  }
+
+  function wireCombo(){
+    var input = $("#car"), list = $("#carList");
+    input.addEventListener("input", function(){ if(!this.value.trim()) showCarStats(null); renderCombo(this.value); });
+    input.addEventListener("focus", function(){ renderCombo(this.value); });
+    input.addEventListener("keydown", function(e){
+      if(list.hidden && (e.key === "ArrowDown" || e.key === "ArrowUp")){ renderCombo(this.value); return; }
+      if(e.key === "ArrowDown"){ e.preventDefault(); setActive(comboActive + 1); }
+      else if(e.key === "ArrowUp"){ e.preventDefault(); setActive(comboActive - 1); }
+      else if(e.key === "Enter"){
+        if(comboActive >= 0 && comboMatches[comboActive]){ e.preventDefault(); selectCar(comboMatches[comboActive]); }
+        else closeCombo();
+      }
+      else if(e.key === "Escape"){ closeCombo(); }
+    });
+    list.addEventListener("mousedown", function(e){
+      var li = e.target.closest(".combo-item"); if(!li) return;
+      e.preventDefault();
+      selectCar(comboMatches[+li.dataset.i]);
+    });
+    document.addEventListener("click", function(e){
+      if(!e.target.closest("#carCombo")) closeCombo();
+    });
   }
 
   // ---- segmented toggles ----
@@ -4998,12 +6496,9 @@ window.FORZA_TRACKS = [
   $("#piClass").addEventListener("change", syncClassRange);
   $("#piTarget").addEventListener("input", drawBar);
 
-  // ---- when a known car is picked, auto-set layout/drivetrain/class ----
+  // ---- if the typed value exactly matches a car, apply its defaults ----
   $("#car").addEventListener("change", function(){
-    var c = findCar(this.value); if(!c) return;
-    setToggle("layout", c.layout);
-    setToggle("drivetrain", c.dt);
-    if(CAP[c.cls]){ $("#piClass").value = c.cls; syncClassRange(); }
+    var c = findCar(this.value); if(c) applyCarDefaults(c);
   });
 
   // ---- gather + generate ----
@@ -5118,6 +6613,7 @@ window.FORZA_TRACKS = [
   });
 
   // ---- init ----
+  wireCombo();
   fillCars(); fillTracks(); syncClassRange();
 })();
 </script>
